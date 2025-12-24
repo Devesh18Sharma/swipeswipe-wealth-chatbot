@@ -13,6 +13,9 @@ import { WealthProjection, UserFinancialData, ChatMessage, GuardrailResult } fro
 import { calculateWealthProjection, formatCurrency } from '../utils/calculations';
 import { checkGuardrails, generateBotResponse, isOnTopic, ALLOWED_TOPICS } from '../utils/guardrails';
 import { SYSTEM_PROMPT, DISCLAIMER } from '../constants';
+import { parseInputWithContext } from '../utils/inputParser';
+import { calculateSwipeSwipeSavings, getSwipeSwipeSavingsExplanation } from '../utils/swipeswipeCalculator';
+import { WealthProjectionChart } from './WealthProjectionChart';
 import './WealthChatbot.css';
 
 // ============================================================================
@@ -27,8 +30,7 @@ interface WealthChatbotProps {
 }
 
 interface ConversationState {
-  stage: 'greeting' | 'age' | 'income' | 'currentSavings' | 'monthlySavings' | 
-         'monthlyInvestment' | 'increaseGoal' | 'swipeswipeSavings' | 'projection' | 'freeChat';
+  stage: 'greeting' | 'age' | 'income' | 'currentSavings' | 'monthlyInvestment' | 'projection' | 'freeChat';
   userData: Partial<UserFinancialData>;
 }
 
@@ -106,124 +108,8 @@ const WealthChatbot: React.FC<WealthChatbotProps> = ({
   // CONVERSATION FLOW HANDLERS
   // ============================================================================
 
-  const getStagePrompt = useCallback((stage: ConversationState['stage']): string => {
-    const prompts: Record<ConversationState['stage'], string> = {
-      greeting: `Welcome to ${companyName}'s Wealth Planning Assistant! 🚀\n\nI'm here to help you discover how wealthy you could become. Let's create a personalized projection together.\n\nTo get started, what's your current age?`,
-      
-      age: "What's your current age?",
-      
-      income: "Great! Now, what's your annual income? (You can enter an approximate amount)",
-      
-      currentSavings: "How much do you currently have saved and invested in total?",
-      
-      monthlySavings: "How much do you save each month? (money set aside for emergencies, goals, etc.)",
-      
-      monthlyInvestment: "And how much do you invest each month? (retirement accounts, stocks, etc.)",
-      
-      increaseGoal: "By what percentage would you like to increase your monthly savings and investments? (e.g., 10, 20, 50)",
-      
-      swipeswipeSavings: `Excellent! Now let's factor in ${companyName}. On average, our users save an additional $150-500/month by controlling impulse purchases.\n\nHow much do you think ${companyName} could help you save per month? (Enter your estimate)`,
-      
-      projection: "Calculating your wealth projection...",
-      
-      freeChat: "Feel free to ask me anything about your financial projection or how to improve your wealth-building strategy!"
-    };
-    
-    return prompts[stage];
-  }, [companyName]);
-
-  const processUserInput = useCallback((input: string): void => {
-    const { stage, userData } = conversationState;
-    
-    // Parse numeric input
-    const numericValue = parseFloat(input.replace(/[$,]/g, ''));
-    
-    // Validate based on current stage
-    switch (stage) {
-      case 'greeting':
-      case 'age': {
-        if (isNaN(numericValue) || numericValue < 18 || numericValue > 100) {
-          addBotMessage("Please enter a valid age between 18 and 100.");
-          return;
-        }
-        updateConversation('income', { age: numericValue });
-        break;
-      }
-      
-      case 'income': {
-        if (isNaN(numericValue) || numericValue < 0) {
-          addBotMessage("Please enter a valid income amount (can be 0 if you're not currently earning).");
-          return;
-        }
-        updateConversation('currentSavings', { annualIncome: numericValue });
-        break;
-      }
-      
-      case 'currentSavings': {
-        if (isNaN(numericValue) || numericValue < 0) {
-          addBotMessage("Please enter a valid amount for your current savings (can be 0).");
-          return;
-        }
-        updateConversation('monthlySavings', { currentSavings: numericValue });
-        break;
-      }
-      
-      case 'monthlySavings': {
-        if (isNaN(numericValue) || numericValue < 0) {
-          addBotMessage("Please enter a valid monthly savings amount (can be 0).");
-          return;
-        }
-        updateConversation('monthlyInvestment', { monthlySavings: numericValue });
-        break;
-      }
-      
-      case 'monthlyInvestment': {
-        if (isNaN(numericValue) || numericValue < 0) {
-          addBotMessage("Please enter a valid monthly investment amount (can be 0).");
-          return;
-        }
-        updateConversation('increaseGoal', { monthlyInvestment: numericValue });
-        break;
-      }
-      
-      case 'increaseGoal': {
-        if (isNaN(numericValue) || numericValue < 0 || numericValue > 500) {
-          addBotMessage("Please enter a reasonable percentage increase (0-500%).");
-          return;
-        }
-        updateConversation('swipeswipeSavings', { increasePercentage: numericValue });
-        break;
-      }
-      
-      case 'swipeswipeSavings': {
-        if (isNaN(numericValue) || numericValue < 0 || numericValue > 10000) {
-          addBotMessage("Please enter a reasonable monthly savings estimate from SwipeSwipe (e.g., 100, 200, 500).");
-          return;
-        }
-        const finalData: UserFinancialData = {
-          ...userData as UserFinancialData,
-          swipeswipeSavings: numericValue
-        };
-        
-        // Calculate and display projection
-        const projectionResult = calculateWealthProjection(finalData);
-        setProjection(projectionResult);
-        onProjectionComplete?.(projectionResult);
-        
-        updateConversation('freeChat', { swipeswipeSavings: numericValue });
-        displayProjection(projectionResult, finalData);
-        break;
-      }
-      
-      case 'freeChat': {
-        handleFreeChatMessage(input);
-        break;
-      }
-    }
-  }, [conversationState, onProjectionComplete]);
-
   // ============================================================================
-  // MESSAGE HANDLERS
+  // MESSAGE HANDLERS (Must be defined before processUserInput)
   // ============================================================================
 
   const addBotMessage = useCallback((content: string, isProjection: boolean = false) => {
@@ -247,6 +133,26 @@ const WealthChatbot: React.FC<WealthChatbotProps> = ({
     setMessages(prev => [...prev, newMessage]);
   }, []);
 
+  const getStagePrompt = useCallback((stage: ConversationState['stage']): string => {
+    const prompts: Record<ConversationState['stage'], string> = {
+      greeting: `Welcome to ${companyName}'s Wealth Planning Assistant! 🚀\n\nI'm here to show you how wealthy you could become through consistent saving and investing. Let's create your personalized projection!\n\nTo get started, what's your current age?`,
+      
+      age: "What's your current age?",
+      
+      income: "Great! What's your annual income? (You can say something like 'around $50,000' or just '50000')",
+      
+      currentSavings: "How much do you currently have saved and invested? (You can say 'I have about $10,000' or just '10000')",
+      
+      monthlyInvestment: "How much do you invest each month? (This includes retirement accounts, stocks, etc. You can say 'I invest around $500 per month' or just '500')",
+      
+      projection: "Calculating your wealth projection...",
+      
+      freeChat: "Feel free to ask me anything about your financial projection or how to improve your wealth-building strategy!"
+    };
+    
+    return prompts[stage];
+  }, [companyName]);
+
   const updateConversation = useCallback((nextStage: ConversationState['stage'], newData: Partial<UserFinancialData>) => {
     setConversationState(prev => ({
       stage: nextStage,
@@ -260,6 +166,8 @@ const WealthChatbot: React.FC<WealthChatbotProps> = ({
   }, [addBotMessage, getStagePrompt]);
 
   const displayProjection = useCallback((proj: WealthProjection, userData: UserFinancialData) => {
+    const swipeswipeExplanation = getSwipeSwipeSavingsExplanation(userData.annualIncome);
+    
     const projectionMessage = `
 🎉 **Your Wealth Projection Results**
 
@@ -267,10 +175,8 @@ Based on your inputs:
 • Age: ${userData.age}
 • Annual Income: ${formatCurrency(userData.annualIncome)}
 • Current Savings: ${formatCurrency(userData.currentSavings)}
-• Monthly Savings: ${formatCurrency(userData.monthlySavings)}
 • Monthly Investment: ${formatCurrency(userData.monthlyInvestment)}
-• Planned Increase: ${userData.increasePercentage}%
-• ${companyName} Contribution: ${formatCurrency(userData.swipeswipeSavings)}/month
+• ${companyName} Contribution: ${formatCurrency(userData.swipeswipeSavings)}/month (${swipeswipeExplanation})
 
 ---
 
@@ -296,7 +202,50 @@ Feel free to ask me any questions about your projection or how to improve your w
     `;
     
     addBotMessage(projectionMessage, true);
+    
+    // Add chart component as a special message
+    setTimeout(() => {
+      setMessages(prev => [...prev, {
+        id: `chart-${Date.now()}`,
+        role: 'assistant',
+        content: 'CHART_COMPONENT',
+        timestamp: new Date(),
+        isProjection: true
+      }]);
+    }, 500);
   }, [addBotMessage, companyName]);
+
+  const generateLocalResponse = (message: string): string => {
+    const lowerMessage = message.toLowerCase();
+    
+    // Financial planning related responses
+    if (lowerMessage.includes('retire') || lowerMessage.includes('retirement')) {
+      return `Great question about retirement! Based on your projection, if you maintain your savings rate with ${companyName}, you could have substantial retirement savings. The general rule is to have 25x your annual expenses saved. Would you like me to calculate a specific retirement target for you?`;
+    }
+    
+    if (lowerMessage.includes('invest') || lowerMessage.includes('stock') || lowerMessage.includes('market')) {
+      return `Investing is crucial for wealth building! In our projection, we assumed a 7% annual return, which is a conservative estimate based on historical stock market averages. Diversification across stocks, bonds, and other assets is key. Remember, ${companyName} helps you have more to invest by reducing impulse spending!`;
+    }
+    
+    if (lowerMessage.includes('save more') || lowerMessage.includes('budget')) {
+      return `Excellent mindset! Here are some tips:\n\n1. **Use ${companyName}** to control impulse purchases\n2. **Automate savings** - pay yourself first\n3. **50/30/20 rule** - 50% needs, 30% wants, 20% savings\n4. **Track every expense** for a month to find leaks\n\nWould you like to recalculate your projection with higher savings?`;
+    }
+    
+    if (lowerMessage.includes('compound') || lowerMessage.includes('interest')) {
+      return `Compound interest is the "eighth wonder of the world" - attributed to Einstein! It means your money earns returns, and those returns earn returns. In your projection, we use compound interest to show how your wealth grows exponentially over time. That's why starting early is so powerful!`;
+    }
+    
+    if (lowerMessage.includes('emergency') || lowerMessage.includes('fund')) {
+      return `An emergency fund is essential! Financial experts recommend 3-6 months of expenses. This should be in a high-yield savings account for easy access. Once you have this safety net, you can invest more aggressively for long-term growth.`;
+    }
+    
+    if (lowerMessage.includes('start over') || lowerMessage.includes('recalculate') || lowerMessage.includes('new projection')) {
+      setConversationState({ stage: 'age', userData: {} });
+      return "Let's create a new projection! What's your current age?";
+    }
+    
+    return `That's a great question about financial planning! While I can provide general guidance, for specific advice tailored to your situation, consider consulting with a certified financial planner. Is there anything specific about your wealth projection I can help clarify?`;
+  };
 
   const handleFreeChatMessage = useCallback(async (message: string) => {
     // Check if message is on-topic
@@ -354,37 +303,90 @@ Feel free to ask me any questions about your projection or how to improve your w
     }
   }, [apiKey, projection, messages, addBotMessage, handleOffTopicQuestion]);
 
-  const generateLocalResponse = (message: string): string => {
-    const lowerMessage = message.toLowerCase();
+  const processUserInput = useCallback((input: string): void => {
+    const { stage, userData } = conversationState;
     
-    // Financial planning related responses
-    if (lowerMessage.includes('retire') || lowerMessage.includes('retirement')) {
-      return `Great question about retirement! Based on your projection, if you maintain your savings rate with ${companyName}, you could have substantial retirement savings. The general rule is to have 25x your annual expenses saved. Would you like me to calculate a specific retirement target for you?`;
+    // Use enhanced input parser
+    let parseResult;
+    
+    switch (stage) {
+      case 'greeting':
+      case 'age': {
+        parseResult = parseInputWithContext(input, 'age');
+        if (!parseResult.isValid) {
+          addBotMessage(parseResult.error || "Please enter a valid age between 18 and 100.");
+          return;
+        }
+        updateConversation('income', { age: parseResult.value! });
+        break;
+      }
+      
+      case 'income': {
+        parseResult = parseInputWithContext(input, 'income');
+        if (!parseResult.isValid) {
+          addBotMessage(parseResult.error || "Please enter a valid income amount.");
+          return;
+        }
+        const income = parseResult.value!;
+        // Auto-calculate SwipeSwipe savings based on income
+        const swipeswipeSavings = calculateSwipeSwipeSavings(income);
+        const explanation = getSwipeSwipeSavingsExplanation(income);
+        addBotMessage(`Perfect! ${explanation}`);
+        updateConversation('currentSavings', { 
+          annualIncome: income,
+          swipeswipeSavings: swipeswipeSavings
+        });
+        break;
+      }
+      
+      case 'currentSavings': {
+        parseResult = parseInputWithContext(input, 'savings');
+        if (!parseResult.isValid) {
+          addBotMessage(parseResult.error || "Please enter a valid amount for your current savings.");
+          return;
+        }
+        updateConversation('monthlyInvestment', { currentSavings: parseResult.value! });
+        break;
+      }
+      
+      case 'monthlyInvestment': {
+        parseResult = parseInputWithContext(input, 'investment');
+        if (!parseResult.isValid) {
+          addBotMessage(parseResult.error || "Please enter a valid monthly investment amount.");
+          return;
+        }
+        const investment = parseResult.value!;
+        
+        // Prepare final data with auto-calculated SwipeSwipe savings
+        const finalData: UserFinancialData = {
+          age: userData.age!,
+          annualIncome: userData.annualIncome!,
+          currentSavings: userData.currentSavings!,
+          monthlySavings: 0, // Simplified - not asking for this
+          monthlyInvestment: investment,
+          increasePercentage: 0, // Simplified - not asking for this
+          swipeswipeSavings: userData.swipeswipeSavings || calculateSwipeSwipeSavings(userData.annualIncome || 0)
+        };
+        
+        // Calculate and display projection
+        const projectionResult = calculateWealthProjection(finalData);
+        setProjection(projectionResult);
+        onProjectionComplete?.(projectionResult);
+        
+        updateConversation('freeChat', {});
+        displayProjection(projectionResult, finalData);
+        break;
+      }
+      
+      case 'freeChat': {
+        handleFreeChatMessage(input);
+        break;
+      }
+      
+      default:
+        break;
     }
-    
-    if (lowerMessage.includes('invest') || lowerMessage.includes('stock') || lowerMessage.includes('market')) {
-      return `Investing is crucial for wealth building! In our projection, we assumed a 7% annual return, which is a conservative estimate based on historical stock market averages. Diversification across stocks, bonds, and other assets is key. Remember, ${companyName} helps you have more to invest by reducing impulse spending!`;
-    }
-    
-    if (lowerMessage.includes('save more') || lowerMessage.includes('budget')) {
-      return `Excellent mindset! Here are some tips:\n\n1. **Use ${companyName}** to control impulse purchases\n2. **Automate savings** - pay yourself first\n3. **50/30/20 rule** - 50% needs, 30% wants, 20% savings\n4. **Track every expense** for a month to find leaks\n\nWould you like to recalculate your projection with higher savings?`;
-    }
-    
-    if (lowerMessage.includes('compound') || lowerMessage.includes('interest')) {
-      return `Compound interest is the "eighth wonder of the world" - attributed to Einstein! It means your money earns returns, and those returns earn returns. In your projection, we use compound interest to show how your wealth grows exponentially over time. That's why starting early is so powerful!`;
-    }
-    
-    if (lowerMessage.includes('emergency') || lowerMessage.includes('fund')) {
-      return `An emergency fund is essential! Financial experts recommend 3-6 months of expenses. This should be in a high-yield savings account for easy access. Once you have this safety net, you can invest more aggressively for long-term growth.`;
-    }
-    
-    if (lowerMessage.includes('start over') || lowerMessage.includes('recalculate') || lowerMessage.includes('new projection')) {
-      setConversationState({ stage: 'age', userData: {} });
-      return "Let's create a new projection! What's your current age?";
-    }
-    
-    return `That's a great question about financial planning! While I can provide general guidance, for specific advice tailored to your situation, consider consulting with a certified financial planner. Is there anything specific about your wealth projection I can help clarify?`;
-  };
+  }, [conversationState, onProjectionComplete, addBotMessage, updateConversation, displayProjection, handleFreeChatMessage]);
 
   // ============================================================================
   // EVENT HANDLERS
@@ -474,7 +476,11 @@ Feel free to ask me any questions about your projection or how to improve your w
                 </div>
               )}
               <div className="message-bubble">
-                <p style={{ whiteSpace: 'pre-wrap' }}>{message.content}</p>
+                {message.content === 'CHART_COMPONENT' && projection ? (
+                  <WealthProjectionChart projection={projection} companyName={companyName} />
+                ) : (
+                  <p style={{ whiteSpace: 'pre-wrap' }}>{message.content}</p>
+                )}
                 <span className="message-time">
                   {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
