@@ -5,7 +5,7 @@
  * handling edge cases professionally, and preventing misuse
  */
 
-import { GuardrailResult, GuardrailCategory, TopicDefinition, WealthProjection, ChatMessage } from '../types';
+import { GuardrailResult, TopicDefinition, WealthProjection, ChatMessage } from '../types';
 
 // ============================================================================
 // ALLOWED TOPICS DEFINITION
@@ -438,12 +438,38 @@ Use this data to provide personalized insights when relevant.`;
 }
 
 // ============================================================================
+// UNIFIED AI RESPONSE (OpenAI or Gemini)
+// ============================================================================
+
+export type AIProvider = 'openai' | 'gemini';
+
+/**
+ * Generate bot response using either OpenAI or Gemini
+ * This allows easy switching between providers
+ */
+export async function generateAIResponse(
+  userMessage: string,
+  systemPrompt: string,
+  apiKey: string,
+  projection: WealthProjection | null,
+  conversationHistory: ChatMessage[] = [],
+  provider: AIProvider = 'openai'
+): Promise<string> {
+  if (provider === 'gemini') {
+    // Dynamic import to avoid loading Gemini SDK if not needed
+    const { generateGeminiResponse } = await import('../services/geminiService');
+    return generateGeminiResponse(userMessage, apiKey, projection, conversationHistory);
+  }
+
+  // Default to OpenAI
+  return generateBotResponse(userMessage, systemPrompt, apiKey, projection, conversationHistory);
+}
+
+// ============================================================================
 // INTENT CLASSIFICATION
 // ============================================================================
 
 export function classifyIntent(message: string): string {
-  const lowerMessage = message.toLowerCase();
-  
   if (/(?:start\s+over|new\s+projection|recalculate)/i.test(message)) {
     return 'restart';
   }

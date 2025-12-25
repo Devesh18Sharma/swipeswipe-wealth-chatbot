@@ -145,7 +145,6 @@ export function calculateWealthProjection(
       year
     );
     
-    const totalContribsWithoutSS = currentSavings + (increasedMonthly * 12 * year);
     const totalContribsWithSS = currentSavings + (totalMonthlyWithSS * 12 * year);
     
     yearByYear.push({

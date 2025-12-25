@@ -9,39 +9,67 @@
    ============================================================================ */
 
 .wealth-chatbot {
-  --brand-color: #6366f1;
-  --brand-color-dark: #4f46e5;
-  --brand-color-light: #818cf8;
-  --brand-color-subtle: #eef2ff;
-  
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8fafc;
-  --bg-tertiary: #f1f5f9;
-  
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --text-muted: #94a3b8;
-  
-  --border-color: #e2e8f0;
+  /* SwipeSwipe Brand Colors */
+  --brand-primary: #293A60;           /* Deep Blue - main brand */
+  --brand-primary-dark: #1a2640;      /* Darker shade */
+  --brand-primary-light: #DEEFF2;     /* Light variant */
+  --brand-accent: #FBC950;            /* Swipe Yellow - CTAs, highlights */
+  --brand-accent-dark: #F4B545;       /* Darker yellow */
+  --brand-orange: #F5692B;            /* Secondary accent */
+
+  /* Semantic Colors */
+  --color-success: #19B600;           /* Positive states */
+  --color-success-light: #D4FACE;
+  --color-warning: #FBC950;
+  --color-danger: #DD2A11;
+  --color-info: #23A6F0;
+  --color-info-light: #B2DFF2;
+
+  /* Legacy aliases for backward compatibility */
+  --brand-color: var(--brand-primary);
+  --brand-color-dark: var(--brand-primary-dark);
+  --brand-color-light: var(--brand-primary-light);
+  --brand-color-subtle: rgba(41, 58, 96, 0.08);
+
+  /* Backgrounds */
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #FAFAFA;
+  --bg-tertiary: #F3F6F9;
+  --bg-gradient: linear-gradient(180deg, #F9F7F3 23.56%, #E5F0F5 100%);
+  --bg-success-gradient: linear-gradient(180deg, #F9F7F3 23.56%, #DDF2D9 100%);
+
+  /* Text Colors */
+  --text-primary: #293A60;
+  --text-secondary: #879CA8;
+  --text-muted: #949EAB;
+
+  /* Borders & Shapes */
+  --border-color: #F3F6F9;
   --border-radius: 12px;
   --border-radius-lg: 16px;
   --border-radius-sm: 8px;
-  
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(41, 58, 96, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(41, 58, 96, 0.1), 0 2px 4px -1px rgba(41, 58, 96, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(41, 58, 96, 0.1), 0 4px 6px -2px rgba(41, 58, 96, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(41, 58, 96, 0.1), 0 10px 10px -5px rgba(41, 58, 96, 0.04);
+
+  /* Transitions */
   --transition-fast: 150ms ease;
   --transition-normal: 200ms ease;
   --transition-slow: 300ms ease;
-  
-  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Typography */
+  --font-family: 'Libre Franklin', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
   --font-size-base: 1rem;
   --font-size-lg: 1.125rem;
   --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
 }
 
 /* ============================================================================
@@ -444,34 +472,40 @@
 
 @media (prefers-color-scheme: dark) {
   .wealth-chatbot {
-    --bg-primary: #1e293b;
-    --bg-secondary: #0f172a;
-    --bg-tertiary: #1e293b;
-    
+    --bg-primary: #1a2640;
+    --bg-secondary: #0f1729;
+    --bg-tertiary: #1a2640;
+
     --text-primary: #f1f5f9;
     --text-secondary: #94a3b8;
     --text-muted: #64748b;
-    
-    --border-color: #334155;
-    --brand-color-subtle: rgba(99, 102, 241, 0.15);
+
+    --border-color: #293A60;
+    --brand-color-subtle: rgba(41, 58, 96, 0.25);
   }
-  
+
   .message.assistant .message-bubble {
-    background: #334155;
-    border-color: #475569;
+    background: #293A60;
+    border-color: #3a4d75;
   }
-  
+
   .bot-avatar {
-    background: rgba(99, 102, 241, 0.2);
+    background: rgba(251, 201, 80, 0.2);
   }
-  
+
+  .bot-avatar svg {
+    color: var(--brand-accent);
+  }
+
   .chatbot-input input {
-    background: #334155;
-    border-color: #475569;
+    background: #293A60;
+    border-color: #3a4d75;
   }
-  
+
   .chatbot-input input:focus {
-    background: #1e293b;
+    background: #1a2640;
+    border-color: var(--brand-accent);
+    box-shadow: 0 0 0 3px rgba(251, 201, 80, 0.2);
   }
 }
 
@@ -540,4 +574,287 @@
 .message-bubble th:first-child,
 .message-bubble td:first-child {
   text-align: left;
+}
+
+/* ============================================================================
+   HERO WEALTH DISPLAY
+   ============================================================================ */
+
+.hero-wealth-display {
+  text-align: center;
+  padding: 24px 20px;
+  background: var(--bg-gradient);
+  border-radius: var(--border-radius-lg);
+  margin: 16px 0;
+  border: 1px solid var(--brand-primary-light);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-wealth-display::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--brand-primary) 0%, var(--brand-accent) 50%, var(--color-success) 100%);
+}
+
+.hero-wealth-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+
+.hero-wealth-amount {
+  font-size: var(--font-size-4xl);
+  font-weight: 700;
+  color: var(--brand-primary);
+  line-height: 1.2;
+  margin-bottom: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.hero-wealth-amount.counting {
+  animation: countPulse 0.1s ease-out;
+}
+
+@keyframes countPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+.hero-wealth-amount.millionaire {
+  background: linear-gradient(135deg, var(--brand-accent) 0%, var(--color-success) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-wealth-timeframe {
+  font-size: var(--font-size-base);
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.hero-swipeswipe-contribution {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--color-success-light);
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-success);
+  border: 1px solid var(--color-success);
+}
+
+.hero-swipeswipe-contribution svg {
+  width: 16px;
+  height: 16px;
+}
+
+.hero-monthly-breakdown {
+  margin-top: 16px;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+/* Celebration glow effect */
+.hero-wealth-display.celebrating {
+  animation: celebrationGlow 2s ease-out;
+}
+
+@keyframes celebrationGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(251, 201, 80, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 30px 10px rgba(251, 201, 80, 0.3);
+  }
+  100% {
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+/* ============================================================================
+   PROJECTION CHART CONTAINER
+   ============================================================================ */
+
+.projection-chart-container {
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-lg);
+  padding: 20px;
+  margin: 16px 0;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+}
+
+.projection-chart-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.projection-chart-title svg {
+  color: var(--brand-accent);
+}
+
+.chart-legend {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 16px;
+  font-size: var(--font-size-sm);
+}
+
+.chart-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chart-legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.chart-legend-dot.with-swipe {
+  background: var(--color-success);
+}
+
+.chart-legend-dot.without-swipe {
+  background: var(--brand-primary);
+}
+
+/* ============================================================================
+   QUICK ACTION BUTTONS (Follow-up suggestions)
+   ============================================================================ */
+
+.quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.quick-action-btn {
+  padding: 8px 14px;
+  background: var(--brand-primary-light);
+  border: 1px solid var(--brand-primary);
+  border-radius: 20px;
+  font-size: var(--font-size-xs);
+  color: var(--brand-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-weight: 500;
+}
+
+.quick-action-btn:hover {
+  background: var(--brand-primary);
+  color: white;
+  transform: translateY(-1px);
+}
+
+.quick-action-btn:active {
+  transform: translateY(0);
+}
+
+/* ============================================================================
+   SUCCESS STATE ENHANCEMENTS
+   ============================================================================ */
+
+.message.success .message-bubble {
+  background: var(--bg-success-gradient);
+  border: 1px solid var(--color-success);
+}
+
+.success-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: var(--color-success);
+  border-radius: 50%;
+  color: white;
+  margin-right: 8px;
+}
+
+/* ============================================================================
+   SWIPESWIPE CONTRIBUTION HIGHLIGHT
+   ============================================================================ */
+
+.swipe-highlight {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: linear-gradient(135deg, rgba(251, 201, 80, 0.2) 0%, rgba(251, 201, 80, 0.1) 100%);
+  border-radius: 4px;
+  color: var(--brand-primary);
+  font-weight: 600;
+}
+
+.swipe-highlight::before {
+  content: '💰';
+  font-size: 0.9em;
+}
+
+/* ============================================================================
+   ANIMATED NUMBER STYLES
+   ============================================================================ */
+
+.animated-number {
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+  transition: transform 0.1s ease-out;
+}
+
+.animated-number.updating {
+  transform: scale(1.05);
+}
+
+/* ============================================================================
+   LOADING/SKELETON STATES
+   ============================================================================ */
+
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%);
+  background-size: 200% 100%;
+  animation: skeletonLoading 1.5s ease-in-out infinite;
+  border-radius: var(--border-radius-sm);
+}
+
+@keyframes skeletonLoading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton-text {
+  height: 16px;
+  margin-bottom: 8px;
+}
+
+.skeleton-text.short {
+  width: 60%;
+}
+
+.skeleton-text.medium {
+  width: 80%;
+}
+
+.skeleton-chart {
+  height: 200px;
+  margin: 16px 0;
 }

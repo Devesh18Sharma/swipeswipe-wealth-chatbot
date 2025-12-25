@@ -9,14 +9,22 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { WealthProjection, UserFinancialData, ChatMessage, GuardrailResult } from '../types';
+import { WealthProjection, UserFinancialData, ChatMessage } from '../types';
 import { calculateWealthProjection, formatCurrency } from '../utils/calculations';
-import { checkGuardrails, generateBotResponse, isOnTopic, ALLOWED_TOPICS } from '../utils/guardrails';
+import { checkGuardrails, generateAIResponse, isOnTopic, ALLOWED_TOPICS, AIProvider } from '../utils/guardrails';
 import { SYSTEM_PROMPT, DISCLAIMER } from '../constants';
 import { parseInputWithContext } from '../utils/inputParser';
 import { calculateSwipeSwipeSavings, getSwipeSwipeSavingsExplanation } from '../utils/swipeswipeCalculator';
-import { WealthProjectionChart } from './WealthProjectionChart';
+import { WealthChart } from './WealthChart';
+import { HeroWealthDisplay } from './HeroWealthDisplay';
 import './WealthChatbot.css';
+
+// SwipeSwipe Brand Colors
+const SWIPESWIPE_COLORS = {
+  primary: '#293A60',
+  accent: '#FBC950',
+  success: '#19B600',
+};
 
 // ============================================================================
 // COMPONENT PROPS & INTERFACES
@@ -24,6 +32,8 @@ import './WealthChatbot.css';
 
 interface WealthChatbotProps {
   apiKey?: string;
+  geminiApiKey?: string;
+  aiProvider?: AIProvider;
   onProjectionComplete?: (projection: WealthProjection) => void;
   brandColor?: string;
   companyName?: string;
@@ -40,10 +50,14 @@ interface ConversationState {
 
 const WealthChatbot: React.FC<WealthChatbotProps> = ({
   apiKey,
+  geminiApiKey,
+  aiProvider = 'gemini', // Default to Gemini as per requirements
   onProjectionComplete,
-  brandColor = '#6366f1',
+  brandColor = SWIPESWIPE_COLORS.primary,
   companyName = 'SwipeSwipe'
 }) => {
+  // Determine which API key to use based on provider
+  const activeApiKey = aiProvider === 'gemini' ? geminiApiKey : apiKey;
   // State management
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -53,6 +67,7 @@ const WealthChatbot: React.FC<WealthChatbotProps> = ({
     userData: {}
   });
   const [projection, setProjection] = useState<WealthProjection | null>(null);
+  const [finalUserData, setFinalUserData] = useState<UserFinancialData | null>(null);
   
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -166,23 +181,35 @@ const WealthChatbot: React.FC<WealthChatbotProps> = ({
   }, [addBotMessage, getStagePrompt]);
 
   const displayProjection = useCallback((proj: WealthProjection, userData: UserFinancialData) => {
-    const swipeswipeExplanation = getSwipeSwipeSavingsExplanation(userData.annualIncome);
-    
-    const projectionMessage = `
-🎉 **Your Wealth Projection Results**
+    // Save user data for HeroWealthDisplay
+    setFinalUserData(userData);
 
-Based on your inputs:
-• Age: ${userData.age}
-• Annual Income: ${formatCurrency(userData.annualIncome)}
-• Current Savings: ${formatCurrency(userData.currentSavings)}
-• Monthly Investment: ${formatCurrency(userData.monthlyInvestment)}
-• ${companyName} Contribution: ${formatCurrency(userData.swipeswipeSavings)}/month (${swipeswipeExplanation})
+    // First, show the hero wealth display (the main attraction!)
+    setMessages(prev => [...prev, {
+      id: `hero-${Date.now()}`,
+      role: 'assistant',
+      content: 'HERO_COMPONENT',
+      timestamp: new Date(),
+      isProjection: true
+    }]);
 
----
+    // Add chart component after a delay
+    setTimeout(() => {
+      setMessages(prev => [...prev, {
+        id: `chart-${Date.now()}`,
+        role: 'assistant',
+        content: 'CHART_COMPONENT',
+        timestamp: new Date(),
+        isProjection: true
+      }]);
+    }, 2500);
 
-📊 **Projected Wealth Over Time** (7% annual return assumed)
+    // Add the detailed breakdown after the hero and chart
+    setTimeout(() => {
+      const projectionMessage = `
+**Your Wealth Breakdown** (7% annual return assumed)
 
-| Years | Without ${companyName} | With ${companyName} | ${companyName} Contribution |
+| Years | Without ${companyName} | With ${companyName} | ${companyName} Bonus |
 |-------|---------------------|-------------------|---------------------------|
 | 5 yrs | ${formatCurrency(proj.withoutSwipeSwipe[5])} | ${formatCurrency(proj.withSwipeSwipe[5])} | +${formatCurrency(proj.swipeswipeContribution[5])} |
 | 10 yrs | ${formatCurrency(proj.withoutSwipeSwipe[10])} | ${formatCurrency(proj.withSwipeSwipe[10])} | +${formatCurrency(proj.swipeswipeContribution[10])} |
@@ -192,27 +219,13 @@ Based on your inputs:
 | 30 yrs | ${formatCurrency(proj.withoutSwipeSwipe[30])} | ${formatCurrency(proj.withSwipeSwipe[30])} | +${formatCurrency(proj.swipeswipeContribution[30])} |
 | 35 yrs | ${formatCurrency(proj.withoutSwipeSwipe[35])} | ${formatCurrency(proj.withSwipeSwipe[35])} | +${formatCurrency(proj.swipeswipeContribution[35])} |
 
----
-
-💡 **Key Insight**: By using ${companyName}, you could accumulate an additional **${formatCurrency(proj.swipeswipeContribution[30])}** over 30 years!
-
 ${DISCLAIMER}
 
 Feel free to ask me any questions about your projection or how to improve your wealth-building strategy!
-    `;
-    
-    addBotMessage(projectionMessage, true);
-    
-    // Add chart component as a special message
-    setTimeout(() => {
-      setMessages(prev => [...prev, {
-        id: `chart-${Date.now()}`,
-        role: 'assistant',
-        content: 'CHART_COMPONENT',
-        timestamp: new Date(),
-        isProjection: true
-      }]);
-    }, 500);
+      `;
+
+      addBotMessage(projectionMessage, true);
+    }, 3500);
   }, [addBotMessage, companyName]);
 
   const generateLocalResponse = (message: string): string => {
@@ -253,45 +266,46 @@ Feel free to ask me any questions about your projection or how to improve your w
       addBotMessage(handleOffTopicQuestion(message));
       return;
     }
-    
+
     // Check guardrails
     const guardrailResult = checkGuardrails(message);
     if (!guardrailResult.allowed) {
       addBotMessage(guardrailResult.response);
       return;
     }
-    
-    // If we have an API key, use OpenAI for intelligent responses
-    if (apiKey) {
+
+    // If we have an API key, use the configured AI provider for intelligent responses
+    if (activeApiKey) {
       setIsLoading(true);
       try {
-        // Pass conversation history to API for context
-        const response = await generateBotResponse(
-          message, 
-          SYSTEM_PROMPT, 
-          apiKey, 
+        // Use unified AI response function with configured provider
+        const response = await generateAIResponse(
+          message,
+          SYSTEM_PROMPT,
+          activeApiKey,
           projection,
-          messages // Pass conversation history
+          messages,
+          aiProvider
         );
         addBotMessage(response);
       } catch (error: any) {
-        console.error('API Error:', error);
-        
+        console.error('AI API Error:', error);
+
         // Better error messages based on error type
         let errorMessage = "I apologize, but I'm having trouble processing your request.";
-        
+
         if (error.message?.includes('timeout')) {
           errorMessage = "The request took too long. Please try again in a moment.";
-        } else if (error.message?.includes('Rate limit')) {
+        } else if (error.message?.includes('Rate limit') || error.message?.includes('quota')) {
           errorMessage = "I'm receiving too many requests. Please wait a moment and try again.";
-        } else if (error.message?.includes('Invalid API key')) {
+        } else if (error.message?.includes('Invalid') || error.message?.includes('API key')) {
           errorMessage = "There's an issue with the API configuration. Please contact support.";
         } else if (error.message?.includes('Failed to get response')) {
           errorMessage = "I'm having trouble connecting. Please check your internet and try again.";
         }
-        
+
         addBotMessage(errorMessage);
-        
+
         // Fallback to local response
         addBotMessage(generateLocalResponse(message));
       } finally {
@@ -301,7 +315,7 @@ Feel free to ask me any questions about your projection or how to improve your w
       // Fallback to predefined responses
       addBotMessage(generateLocalResponse(message));
     }
-  }, [apiKey, projection, messages, addBotMessage, handleOffTopicQuestion]);
+  }, [activeApiKey, aiProvider, projection, messages, addBotMessage, handleOffTopicQuestion]);
 
   const processUserInput = useCallback((input: string): void => {
     const { stage, userData } = conversationState;
@@ -476,8 +490,16 @@ Feel free to ask me any questions about your projection or how to improve your w
                 </div>
               )}
               <div className="message-bubble">
-                {message.content === 'CHART_COMPONENT' && projection ? (
-                  <WealthProjectionChart projection={projection} companyName={companyName} />
+                {message.content === 'HERO_COMPONENT' && projection && finalUserData ? (
+                  <HeroWealthDisplay
+                    targetAmount={projection.withSwipeSwipe[30]}
+                    yearsToRetirement={30}
+                    retirementAge={finalUserData.age + 30}
+                    swipeswipeContribution={projection.swipeswipeContribution[30]}
+                    monthlyInvestment={finalUserData.monthlyInvestment + finalUserData.swipeswipeSavings}
+                  />
+                ) : message.content === 'CHART_COMPONENT' && projection ? (
+                  <WealthChart projection={projection} companyName={companyName} />
                 ) : (
                   <p style={{ whiteSpace: 'pre-wrap' }}>{message.content}</p>
                 )}

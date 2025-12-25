@@ -31,7 +31,7 @@ export const WealthProjectionChart: React.FC<WealthProjectionChartProps> = ({
   const graphWidth = chartWidth - padding.left - padding.right;
   const graphHeight = chartHeight - padding.top - padding.bottom;
 
-  const getX = (year: number, index: number) => {
+  const getX = (_year: number, index: number) => {
     return padding.left + (index / (years.length - 1)) * graphWidth;
   };
 
@@ -52,23 +52,42 @@ export const WealthProjectionChart: React.FC<WealthProjectionChartProps> = ({
   const withPath = createPath((year) => projection.withSwipeSwipe[year]);
   const withoutPath = createPath((year) => projection.withoutSwipeSwipe[year]);
 
+  // SwipeSwipe Theme Colors
+  const colors = {
+    primary: '#293A60',      // Deep Blue
+    primaryLight: '#DEEFF2', // Light Blue
+    success: '#19B600',      // Success Green
+    successLight: '#D4FACE', // Light Green
+    accent: '#FBC950',       // Swipe Yellow
+    textPrimary: '#293A60',
+    textSecondary: '#879CA8',
+    textMuted: '#949EAB',
+    bgSecondary: '#FAFAFA',
+    bgTertiary: '#F3F6F9',
+    border: '#F3F6F9',
+  };
+
   return (
-    <div style={{ 
-      width: '100%', 
-      maxWidth: '100%', 
+    <div style={{
+      width: '100%',
+      maxWidth: '100%',
       margin: '20px 0',
       padding: '20px',
-      background: '#f8fafc',
+      background: colors.bgSecondary,
       borderRadius: '12px',
-      overflowX: 'auto'
+      overflowX: 'auto',
+      border: `1px solid ${colors.border}`
     }}>
-      <h3 style={{ 
-        marginBottom: '20px', 
-        fontSize: '1.25rem', 
+      <h3 style={{
+        marginBottom: '20px',
+        fontSize: '1.25rem',
         fontWeight: 600,
-        color: '#1e293b'
+        color: colors.textPrimary,
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px'
       }}>
-        📈 Your Wealth Growth Over Time
+        <span style={{ color: colors.accent }}>📈</span> Your Wealth Growth Over Time
       </h3>
       
       <div style={{ 
@@ -97,7 +116,7 @@ export const WealthProjectionChart: React.FC<WealthProjectionChartProps> = ({
                   y1={y}
                   x2={padding.left + graphWidth}
                   y2={y}
-                  stroke="#e2e8f0"
+                  stroke={colors.border}
                   strokeWidth="1"
                   strokeDasharray="4,4"
                 />
@@ -106,7 +125,7 @@ export const WealthProjectionChart: React.FC<WealthProjectionChartProps> = ({
                   y={y + 4}
                   textAnchor="end"
                   fontSize="11"
-                  fill="#64748b"
+                  fill={colors.textSecondary}
                 >
                   {formatCurrency(value)}
                 </text>
@@ -124,7 +143,7 @@ export const WealthProjectionChart: React.FC<WealthProjectionChartProps> = ({
                 y={chartHeight - padding.bottom + 20}
                 textAnchor="middle"
                 fontSize="12"
-                fill="#64748b"
+                fill={colors.textSecondary}
                 fontWeight="500"
               >
                 {year}yr
@@ -136,17 +155,17 @@ export const WealthProjectionChart: React.FC<WealthProjectionChartProps> = ({
           <path
             d={withoutPath}
             fill="none"
-            stroke="#94a3b8"
+            stroke={colors.primary}
             strokeWidth="3"
             strokeDasharray="6,4"
-            opacity="0.7"
+            opacity="0.6"
           />
 
-          {/* With SwipeSwipe line */}
+          {/* With SwipeSwipe line - Success Green */}
           <path
             d={withPath}
             fill="none"
-            stroke="#6366f1"
+            stroke={colors.success}
             strokeWidth="4"
           />
 
@@ -160,9 +179,10 @@ export const WealthProjectionChart: React.FC<WealthProjectionChartProps> = ({
                 cx={x}
                 cy={y}
                 r="5"
-                fill="#94a3b8"
+                fill={colors.primary}
                 stroke="#fff"
                 strokeWidth="2"
+                opacity="0.8"
               />
             );
           })}
@@ -177,7 +197,7 @@ export const WealthProjectionChart: React.FC<WealthProjectionChartProps> = ({
                 cx={x}
                 cy={y}
                 r="6"
-                fill="#6366f1"
+                fill={colors.success}
                 stroke="#fff"
                 strokeWidth="2"
               />
@@ -188,25 +208,26 @@ export const WealthProjectionChart: React.FC<WealthProjectionChartProps> = ({
           {years.map((year, index) => {
             const x = getX(year, index);
             return (
-              <rect
-                key={`tooltip-${year}`}
-                x={x - 15}
-                y={padding.top}
-                width="30"
-                height={graphHeight}
-                fill="transparent"
-                style={{ cursor: 'pointer' }}
-                title={`${year} years: ${formatCurrency(projection.withSwipeSwipe[year])} with ${companyName}`}
-              />
+              <g key={`tooltip-${year}`}>
+                <rect
+                  x={x - 15}
+                  y={padding.top}
+                  width="30"
+                  height={graphHeight}
+                  fill="transparent"
+                  style={{ cursor: 'pointer' }}
+                />
+                <title>{`${year} years: ${formatCurrency(projection.withSwipeSwipe[year])} with ${companyName}`}</title>
+              </g>
             );
           })}
         </svg>
       </div>
 
       {/* Legend */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
         gap: '24px',
         marginTop: '16px',
         flexWrap: 'wrap'
@@ -215,10 +236,10 @@ export const WealthProjectionChart: React.FC<WealthProjectionChartProps> = ({
           <div style={{
             width: '20px',
             height: '4px',
-            background: '#6366f1',
+            background: colors.success,
             borderRadius: '2px'
           }}></div>
-          <span style={{ fontSize: '14px', color: '#475569' }}>
+          <span style={{ fontSize: '14px', color: colors.textSecondary }}>
             With {companyName}
           </span>
         </div>
@@ -226,32 +247,32 @@ export const WealthProjectionChart: React.FC<WealthProjectionChartProps> = ({
           <div style={{
             width: '20px',
             height: '4px',
-            background: '#94a3b8',
+            background: colors.primary,
             borderRadius: '2px',
-            borderTop: '2px dashed #94a3b8'
+            opacity: 0.6
           }}></div>
-          <span style={{ fontSize: '14px', color: '#475569' }}>
+          <span style={{ fontSize: '14px', color: colors.textSecondary }}>
             Without {companyName}
           </span>
         </div>
       </div>
 
-      {/* Key insight */}
+      {/* Key insight - SwipeSwipe branded */}
       <div style={{
         marginTop: '20px',
         padding: '16px',
-        background: '#eef2ff',
+        background: colors.successLight,
         borderRadius: '8px',
-        borderLeft: '4px solid #6366f1'
+        borderLeft: `4px solid ${colors.success}`
       }}>
-        <p style={{ 
-          margin: 0, 
-          fontSize: '14px', 
-          color: '#1e293b',
+        <p style={{
+          margin: 0,
+          fontSize: '14px',
+          color: colors.textPrimary,
           lineHeight: '1.6'
         }}>
           <strong>💡 Key Insight:</strong> By using {companyName}, you could accumulate an additional{' '}
-          <strong style={{ color: '#6366f1' }}>
+          <strong style={{ color: colors.success }}>
             {formatCurrency(projection.swipeswipeContribution[30])}
           </strong>{' '}
           over 30 years! This shows the power of consistent savings and compound interest.
