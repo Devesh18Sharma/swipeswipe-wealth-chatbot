@@ -17,6 +17,7 @@ import { parseInputWithContext } from '../utils/inputParser';
 import { calculateSwipeSwipeSavings, getSwipeSwipeSavingsExplanation } from '../utils/swipeswipeCalculator';
 import { WealthChart } from './WealthChart';
 import { HeroWealthDisplay } from './HeroWealthDisplay';
+import { initializeGoogleAPI, exportToGoogleDocs } from '../services/googleDocsService';
 import './WealthChatbot.css';
 
 // SwipeSwipe Brand Colors
@@ -37,6 +38,9 @@ interface WealthChatbotProps {
   onProjectionComplete?: (projection: WealthProjection) => void;
   brandColor?: string;
   companyName?: string;
+  // Google Docs Export
+  googleClientId?: string;
+  googleApiKey?: string;
 }
 
 interface ConversationState {
@@ -54,7 +58,9 @@ const WealthChatbot: React.FC<WealthChatbotProps> = ({
   aiProvider = 'gemini', // Default to Gemini as per requirements
   onProjectionComplete,
   brandColor = SWIPESWIPE_COLORS.primary,
-  companyName = 'SwipeSwipe'
+  companyName = 'SwipeSwipe',
+  googleClientId,
+  googleApiKey,
 }) => {
   // Determine which API key to use based on provider
   const activeApiKey = aiProvider === 'gemini' ? geminiApiKey : apiKey;
@@ -68,6 +74,11 @@ const WealthChatbot: React.FC<WealthChatbotProps> = ({
   });
   const [projection, setProjection] = useState<WealthProjection | null>(null);
   const [finalUserData, setFinalUserData] = useState<UserFinancialData | null>(null);
+
+  // Google Docs Export state
+  const [isExporting, setIsExporting] = useState(false);
+  const [googleInitialized, setGoogleInitialized] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
   
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -428,8 +439,55 @@ Feel free to ask me any questions about your projection or how to improve your w
   }, [handleSubmit]);
 
   // ============================================================================
+  // GOOGLE DOCS EXPORT HANDLER
+  // ============================================================================
+
+  const handleExportToGoogleDocs = useCallback(async () => {
+    if (!projection || !finalUserData) {
+      setExportError('No projection data available to export');
+      return;
+    }
+
+    if (!googleClientId || !googleApiKey) {
+      setExportError('Google API credentials not configured');
+      return;
+    }
+
+    setIsExporting(true);
+    setExportError(null);
+
+    try {
+      // Initialize Google API if not already done
+      if (!googleInitialized) {
+        await initializeGoogleAPI(googleClientId, googleApiKey);
+        setGoogleInitialized(true);
+      }
+
+      // Export to Google Docs
+      const docUrl = await exportToGoogleDocs(projection, finalUserData, companyName);
+
+      addBotMessage(`Your wealth projection report has been exported to Google Docs! You can view and edit it here: ${docUrl}`);
+    } catch (error: any) {
+      console.error('Google Docs export error:', error);
+      setExportError(error.message || 'Failed to export to Google Docs');
+      addBotMessage(`Sorry, I couldn't export to Google Docs: ${error.message || 'Unknown error'}. Please try again.`);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [projection, finalUserData, googleClientId, googleApiKey, googleInitialized, companyName, addBotMessage]);
+
+  // ============================================================================
   // EFFECTS
   // ============================================================================
+
+  // Initialize Google API on mount if credentials provided
+  useEffect(() => {
+    if (googleClientId && googleApiKey && !googleInitialized) {
+      initializeGoogleAPI(googleClientId, googleApiKey)
+        .then(() => setGoogleInitialized(true))
+        .catch((error) => console.warn('Google API initialization deferred:', error));
+    }
+  }, [googleClientId, googleApiKey, googleInitialized]);
 
   // Initial greeting
   useEffect(() => {
@@ -533,6 +591,38 @@ Feel free to ask me any questions about your projection or how to improve your w
         
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Export Actions - shown after projection is available */}
+      {projection && finalUserData && googleClientId && googleApiKey && (
+        <div className="export-actions">
+          <button
+            className="export-button google-docs"
+            onClick={handleExportToGoogleDocs}
+            disabled={isExporting}
+            title="Export your wealth projection to Google Docs"
+          >
+            {isExporting ? (
+              <>
+                <span className="export-spinner"></span>
+                Exporting...
+              </>
+            ) : (
+              <>
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="export-icon">
+                  <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 18V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M9 15L12 12L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Export to Google Docs
+              </>
+            )}
+          </button>
+          {exportError && (
+            <span className="export-error">{exportError}</span>
+          )}
+        </div>
+      )}
 
       <form className="chatbot-input" onSubmit={handleSubmit}>
         <input

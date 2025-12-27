@@ -19,9 +19,13 @@ import { WealthProjection } from './types';
 export function BasicExample() {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
-      <WealthChatbot 
+      <WealthChatbot
+        geminiApiKey={import.meta.env.VITE_GEMINI_API_KEY}
+        aiProvider="gemini"
         companyName="SwipeSwipe"
-        brandColor="#6366f1"
+        brandColor="#293A60"
+        googleClientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}
+        googleApiKey={import.meta.env.VITE_GOOGLE_API_KEY}
       />
     </div>
   );
@@ -58,11 +62,14 @@ export function OpenAIExample() {
       padding: '20px',
       gap: '20px'
     }}>
-      <WealthChatbot 
-        apiKey={import.meta.env.VITE_OPENAI_API_KEY} // 👈 Use environment variable for API key
+      <WealthChatbot
+        apiKey={import.meta.env.VITE_OPENAI_API_KEY}
+        aiProvider="openai"
         companyName="SwipeSwipe"
-        brandColor="#6366f1"
+        brandColor="#293A60"
         onProjectionComplete={handleProjectionComplete}
+        googleClientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}
+        googleApiKey={import.meta.env.VITE_GOOGLE_API_KEY}
       />
       
       {projection && (
@@ -131,16 +138,19 @@ export function LandingPageExample() {
       </header>
 
       {/* Chatbot Section */}
-      <main style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
+      <main style={{
+        display: 'flex',
+        justifyContent: 'center',
         padding: '60px 20px',
         background: '#f8fafc'
       }}>
-        <WealthChatbot 
-          apiKey={import.meta.env.VITE_OPENAI_API_KEY} // 👈 Use environment variable for API key (optional)
+        <WealthChatbot
+          geminiApiKey={import.meta.env.VITE_GEMINI_API_KEY}
+          aiProvider="gemini"
           companyName="SwipeSwipe"
-          brandColor="#6366f1"
+          brandColor="#293A60"
+          googleClientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}
+          googleApiKey={import.meta.env.VITE_GOOGLE_API_KEY}
         />
       </main>
 
