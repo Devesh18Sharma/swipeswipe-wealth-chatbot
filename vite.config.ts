@@ -9,18 +9,14 @@ export default defineConfig({
     open: true,
   },
   build: {
-    lib: {
-      entry: 'src/index.ts',
-      name: 'SwipeSwipeWealthChatbot',
-      fileName: (format) => `index.${format}.js`,
-      formats: ['es', 'cjs'],
-    },
+    outDir: 'dist',
+    sourcemap: false,
     rollupOptions: {
-      external: ['react', 'react-dom'],
       output: {
-        globals: {
-          react: 'React',
-          'react-dom': 'ReactDOM',
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          charts: ['recharts'],
+          ai: ['@google/generative-ai'],
         },
       },
     },
