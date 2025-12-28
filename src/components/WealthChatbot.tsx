@@ -10,9 +10,9 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { WealthProjection, UserFinancialData, ChatMessage } from '../types';
-import { calculateWealthProjection, formatCurrency } from '../utils/calculations';
+import { calculateWealthProjection } from '../utils/calculations';
 import { checkGuardrails, generateAIResponse, isOnTopic, ALLOWED_TOPICS, AIProvider } from '../utils/guardrails';
-import { SYSTEM_PROMPT, DISCLAIMER } from '../constants';
+import { SYSTEM_PROMPT } from '../constants';
 import { parseInputWithContext } from '../utils/inputParser';
 import { calculateSwipeSwipeSavings, getSwipeSwipeSavingsExplanation } from '../utils/swipeswipeCalculator';
 import { WealthChart } from './WealthChart';
@@ -191,7 +191,7 @@ const WealthChatbot: React.FC<WealthChatbotProps> = ({
     }, 500);
   }, [addBotMessage, getStagePrompt]);
 
-  const displayProjection = useCallback((proj: WealthProjection, userData: UserFinancialData) => {
+  const displayProjection = useCallback((_proj: WealthProjection, userData: UserFinancialData) => {
     // Save user data for HeroWealthDisplay
     setFinalUserData(userData);
 
@@ -215,29 +215,11 @@ const WealthChatbot: React.FC<WealthChatbotProps> = ({
       }]);
     }, 2500);
 
-    // Add the detailed breakdown after the hero and chart
+    // Add a simple follow-up message after chart
     setTimeout(() => {
-      const projectionMessage = `
-**Your Wealth Breakdown** (7% annual return assumed)
-
-| Years | Without ${companyName} | With ${companyName} | ${companyName} Bonus |
-|-------|---------------------|-------------------|---------------------------|
-| 5 yrs | ${formatCurrency(proj.withoutSwipeSwipe[5])} | ${formatCurrency(proj.withSwipeSwipe[5])} | +${formatCurrency(proj.swipeswipeContribution[5])} |
-| 10 yrs | ${formatCurrency(proj.withoutSwipeSwipe[10])} | ${formatCurrency(proj.withSwipeSwipe[10])} | +${formatCurrency(proj.swipeswipeContribution[10])} |
-| 15 yrs | ${formatCurrency(proj.withoutSwipeSwipe[15])} | ${formatCurrency(proj.withSwipeSwipe[15])} | +${formatCurrency(proj.swipeswipeContribution[15])} |
-| 20 yrs | ${formatCurrency(proj.withoutSwipeSwipe[20])} | ${formatCurrency(proj.withSwipeSwipe[20])} | +${formatCurrency(proj.swipeswipeContribution[20])} |
-| 25 yrs | ${formatCurrency(proj.withoutSwipeSwipe[25])} | ${formatCurrency(proj.withSwipeSwipe[25])} | +${formatCurrency(proj.swipeswipeContribution[25])} |
-| 30 yrs | ${formatCurrency(proj.withoutSwipeSwipe[30])} | ${formatCurrency(proj.withSwipeSwipe[30])} | +${formatCurrency(proj.swipeswipeContribution[30])} |
-| 35 yrs | ${formatCurrency(proj.withoutSwipeSwipe[35])} | ${formatCurrency(proj.withSwipeSwipe[35])} | +${formatCurrency(proj.swipeswipeContribution[35])} |
-
-${DISCLAIMER}
-
-Feel free to ask me any questions about your projection or how to improve your wealth-building strategy!
-      `;
-
-      addBotMessage(projectionMessage, true);
+      addBotMessage(`Feel free to ask me any questions about your projection or how to improve your wealth-building strategy! You can also export your detailed report to Google Docs.`);
     }, 3500);
-  }, [addBotMessage, companyName]);
+  }, [addBotMessage]);
 
   const generateLocalResponse = (message: string): string => {
     const lowerMessage = message.toLowerCase();
@@ -549,15 +531,26 @@ Feel free to ask me any questions about your projection or how to improve your w
               )}
               <div className="message-bubble">
                 {message.content === 'HERO_COMPONENT' && projection && finalUserData ? (
-                  <HeroWealthDisplay
-                    targetAmount={projection.withSwipeSwipe[30]}
-                    yearsToRetirement={30}
-                    retirementAge={finalUserData.age + 30}
-                    swipeswipeContribution={projection.swipeswipeContribution[30]}
-                    monthlyInvestment={finalUserData.monthlyInvestment + finalUserData.swipeswipeSavings}
-                  />
+                  (() => {
+                    // Calculate years based on 88 years life expectancy, capped at 35
+                    const LIFE_EXPECTANCY = 88;
+                    const yearsToShow = Math.min(35, Math.max(5, LIFE_EXPECTANCY - finalUserData.age));
+                    // Round to nearest milestone year (5, 10, 15, 20, 25, 30, 35)
+                    const milestoneYear = [5, 10, 15, 20, 25, 30, 35].reduce((prev, curr) =>
+                      Math.abs(curr - yearsToShow) < Math.abs(prev - yearsToShow) ? curr : prev
+                    );
+                    return (
+                      <HeroWealthDisplay
+                        targetAmount={projection.withSwipeSwipe[milestoneYear]}
+                        yearsToRetirement={milestoneYear}
+                        retirementAge={finalUserData.age + milestoneYear}
+                        swipeswipeContribution={projection.swipeswipeContribution[milestoneYear]}
+                        monthlyInvestment={finalUserData.monthlyInvestment + finalUserData.swipeswipeSavings}
+                      />
+                    );
+                  })()
                 ) : message.content === 'CHART_COMPONENT' && projection ? (
-                  <WealthChart projection={projection} companyName={companyName} />
+                  <WealthChart projection={projection} companyName={companyName} userAge={finalUserData?.age} />
                 ) : (
                   <p style={{ whiteSpace: 'pre-wrap' }}>{message.content}</p>
                 )}

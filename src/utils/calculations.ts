@@ -11,7 +11,7 @@ import { UserFinancialData, WealthProjection, YearlyProjection, ProjectionAssump
 // CONSTANTS
 // ============================================================================
 
-const DEFAULT_ANNUAL_RETURN_RATE = 0.07; // 7% average market return
+const DEFAULT_ANNUAL_RETURN_RATE = 0.11; // 11% average market return (S&P 500 historical average)
 const DEFAULT_INFLATION_RATE = 0.025; // 2.5% inflation
 const COMPOUNDING_PERIODS_PER_YEAR = 12; // Monthly compounding
 const PROJECTION_YEARS = [5, 10, 15, 20, 25, 30, 35];

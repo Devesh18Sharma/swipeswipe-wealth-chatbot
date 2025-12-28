@@ -97,7 +97,7 @@ Keep responses warm, simple, and focused on their specific situation.`;
 // ============================================================================
 
 export const DISCLAIMER = `
-⚠️ **Important Disclaimer**: This projection is for educational purposes only and is not financial advice. The 7% annual return is based on historical stock market averages, but actual returns may vary significantly. Past performance does not guarantee future results. Please consult with a qualified financial advisor for personalized advice.
+⚠️ **Important Disclaimer**: This projection is for educational purposes only and is not financial advice. The 11% annual return is based on historical S&P 500 averages, but actual returns may vary significantly. Past performance does not guarantee future results. Please consult with a qualified financial advisor for personalized advice.
 `;
 
 export const SHORT_DISCLAIMER = `*For educational purposes only. Not financial advice. Consult a professional for personalized guidance.*`;
@@ -197,10 +197,11 @@ export const CONFIG = {
   
   // Projection Defaults
   projection: {
-    defaultReturnRate: 0.07, // 7%
+    defaultReturnRate: 0.11, // 11% (S&P 500 historical average)
     defaultInflationRate: 0.025, // 2.5%
     milestoneYears: [5, 10, 15, 20, 25, 30, 35],
-    maxProjectionYears: 50
+    maxProjectionYears: 50,
+    lifeExpectancy: 88 // Assumed user life expectancy
   },
   
   // Validation Limits
