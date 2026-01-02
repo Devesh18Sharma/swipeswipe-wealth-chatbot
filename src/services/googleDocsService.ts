@@ -1,7 +1,7 @@
 /**
  * Google Docs Export Service
  * Creates beautiful, branded wealth projection reports in Google Docs
- * Uses proper Google Docs API formatting for professional appearance
+ * EXACTLY matches the visual design from the reference image
  */
 
 import { WealthProjection, UserFinancialData } from '../types';
@@ -15,23 +15,25 @@ const DISCOVERY_DOCS = [
 ];
 
 // SwipeSwipe Links
-const SWIPESWIPE_WEBSITE = 'https://swipeswipe.co/';
+const SWIPESWIPE_WEBSITE = 'swipeswipe.co';
 const CHROME_EXTENSION_LINK = 'https://chromewebstore.google.com/detail/swipeswipe/jmephhldhjnmcmmnmgoiibamhgeoolbl?utm_source=ext_app_menu';
 
-// 11% return rate constant
-const ANNUAL_RETURN_RATE = 11;
+// Return rate constants
+const PRE_RETIREMENT_RETURN_RATE = 11;
+const POST_RETIREMENT_RETURN_RATE = 6;
 
-// SwipeSwipe Brand Colors (from THEME.md)
+// SwipeSwipe Brand Colors (RGB values 0-1)
 const COLORS = {
-  primary: { red: 0.161, green: 0.227, blue: 0.376 },      // #293A60 - Deep Blue
-  primaryLight: { red: 0.871, green: 0.937, blue: 0.949 }, // #DEEFF2 - Light Blue
-  accent: { red: 0.984, green: 0.788, blue: 0.314 },       // #FBC950 - Swipe Yellow
-  accentLight: { red: 1.0, green: 0.929, blue: 0.808 },    // #FFEDCE - Light Yellow
-  success: { red: 0.098, green: 0.714, blue: 0.0 },        // #19B600 - Success Green
-  successLight: { red: 0.831, green: 0.980, blue: 0.808 }, // #D4FACE - Light Green
+  primary: { red: 0.161, green: 0.227, blue: 0.376 },       // #293A60
+  primaryLight: { red: 0.871, green: 0.937, blue: 0.949 },  // #DEEFF2
+  success: { red: 0.098, green: 0.714, blue: 0.0 },         // #19B600
+  successLight: { red: 0.831, green: 0.941, blue: 0.808 },  // #D4F0CE
+  successBg: { red: 0.878, green: 0.941, blue: 0.867 },     // #E0F0DD - lighter green bg
   white: { red: 1.0, green: 1.0, blue: 1.0 },
-  lightGray: { red: 0.973, green: 0.965, blue: 0.953 },    // #F9F7F3 - Off-white
+  lightGray: { red: 0.95, green: 0.95, blue: 0.95 },        // #F2F2F2
+  cardBg: { red: 0.96, green: 0.965, blue: 0.97 },          // #F5F7F8
   textSecondary: { red: 0.529, green: 0.612, blue: 0.659 }, // #879CA8
+  heroBg: { red: 0.227, green: 0.376, blue: 0.267 },        // Green hero background
 };
 
 declare global {
@@ -44,9 +46,6 @@ declare global {
 let gapiInitialized = false;
 let tokenClient: any = null;
 
-/**
- * Initialize Google API client
- */
 export async function initializeGoogleAPI(clientId: string, apiKey: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const script = document.createElement('script');
@@ -82,16 +81,12 @@ export async function initializeGoogleAPI(clientId: string, apiKey: string): Pro
   });
 }
 
-/**
- * Request user authorization
- */
 export function requestAuthorization(): Promise<void> {
   return new Promise((resolve, reject) => {
     if (!tokenClient) {
       reject(new Error('Google API not initialized'));
       return;
     }
-
     tokenClient.callback = (response: any) => {
       if (response.error) {
         reject(new Error(response.error));
@@ -99,7 +94,6 @@ export function requestAuthorization(): Promise<void> {
       }
       resolve();
     };
-
     if (window.gapi.client.getToken() === null) {
       tokenClient.requestAccessToken({ prompt: 'consent' });
     } else {
@@ -108,16 +102,10 @@ export function requestAuthorization(): Promise<void> {
   });
 }
 
-/**
- * Check if user is signed in
- */
 export function isSignedIn(): boolean {
   return gapiInitialized && window.gapi?.client?.getToken() !== null;
 }
 
-/**
- * Sign out user
- */
 export function signOut(): void {
   const token = window.gapi.client.getToken();
   if (token !== null) {
@@ -127,7 +115,7 @@ export function signOut(): void {
 }
 
 /**
- * Create a wealth projection document in Google Docs with beautiful formatting
+ * Create wealth projection document matching the reference image EXACTLY
  */
 export async function createWealthProjectionDoc(
   projection: WealthProjection,
@@ -144,9 +132,9 @@ export async function createWealthProjectionDoc(
     day: 'numeric',
   });
 
-  // Calculate years based on 88 life expectancy
-  const LIFE_EXPECTANCY = 88;
-  const yearsToShow = Math.min(35, Math.max(5, LIFE_EXPECTANCY - userData.age));
+  // Calculate projection values
+  const LIFE_EXPECTANCY = 90;
+  const yearsToShow = Math.min(45, Math.max(5, LIFE_EXPECTANCY - userData.age));
   const milestoneYear = [5, 10, 15, 20, 25, 30, 35].reduce((prev, curr) =>
     Math.abs(curr - yearsToShow) < Math.abs(prev - yearsToShow) ? curr : prev
   );
@@ -154,586 +142,456 @@ export async function createWealthProjectionDoc(
   const finalWealth = projection.withSwipeSwipe[milestoneYear];
   const swipeContribution = projection.swipeswipeContribution[milestoneYear];
   const wealthWithoutSS = projection.withoutSwipeSwipe[milestoneYear];
-  const isMillionaire = finalWealth >= 1000000;
-  const totalMonthly = userData.monthlyInvestment + userData.swipeswipeSavings;
+  const finalAge = userData.age + milestoneYear;
 
-  // Create the document
+  // Create document
   const createResponse = await window.gapi.client.docs.documents.create({
     title: `${companyName} Wealth Projection - ${today}`,
   });
-
   const documentId = createResponse.result.documentId;
 
-  // Build document content and formatting requests
   const requests: any[] = [];
-  let currentIndex = 1;
+  let idx = 1;
 
-  // Helper function to add text and track index
+  // Helper to add text
   const addText = (text: string) => {
-    requests.push({
-      insertText: {
-        location: { index: currentIndex },
-        text: text,
-      },
-    });
-    const startIndex = currentIndex;
-    currentIndex += text.length;
-    return { startIndex, endIndex: currentIndex };
+    requests.push({ insertText: { location: { index: idx }, text } });
+    const start = idx;
+    idx += text.length;
+    return { start, end: idx };
   };
 
-  // Helper function to format text
-  const formatText = (startIndex: number, endIndex: number, style: any) => {
+  // Helper to format text
+  const fmt = (start: number, end: number, style: any) => {
     requests.push({
       updateTextStyle: {
-        range: { startIndex, endIndex },
+        range: { startIndex: start, endIndex: end },
         textStyle: style,
         fields: Object.keys(style).join(','),
       },
     });
   };
 
-  // Helper function to format paragraph
-  const formatParagraph = (startIndex: number, endIndex: number, style: any) => {
+  // Helper to format paragraph
+  const para = (start: number, end: number, style: any) => {
     requests.push({
       updateParagraphStyle: {
-        range: { startIndex, endIndex },
+        range: { startIndex: start, endIndex: end },
         paragraphStyle: style,
         fields: Object.keys(style).join(','),
       },
     });
   };
 
-  // ============================================================================
-  // HEADER SECTION
-  // ============================================================================
+  // ══════════════════════════════════════════════════════════════════════════
+  // HEADER: "SwipeSwipe Wealth Projection" + "swipeswipe.co"
+  // ══════════════════════════════════════════════════════════════════════════
 
-  // Brand name
-  const headerRange = addText('SWIPESWIPE\n');
-  formatText(headerRange.startIndex, headerRange.endIndex - 1, {
+  const h1 = addText(`${companyName} `);
+  fmt(h1.start, h1.end, {
     bold: true,
-    fontSize: { magnitude: 28, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.primary } },
-  });
-  formatParagraph(headerRange.startIndex, headerRange.endIndex, {
-    alignment: 'CENTER',
-    spaceBelow: { magnitude: 6, unit: 'PT' },
-  });
-
-  // Tagline
-  const taglineRange = addText('Your Partner in Building Wealth\n');
-  formatText(taglineRange.startIndex, taglineRange.endIndex - 1, {
-    fontSize: { magnitude: 12, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
-  });
-  formatParagraph(taglineRange.startIndex, taglineRange.endIndex, {
-    alignment: 'CENTER',
-    spaceBelow: { magnitude: 4, unit: 'PT' },
-  });
-
-  // Website link
-  const websiteRange = addText(`${SWIPESWIPE_WEBSITE}\n`);
-  formatText(websiteRange.startIndex, websiteRange.endIndex - 1, {
-    fontSize: { magnitude: 10, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.accent } },
-    link: { url: SWIPESWIPE_WEBSITE },
-    underline: true,
-  });
-  formatParagraph(websiteRange.startIndex, websiteRange.endIndex, {
-    alignment: 'CENTER',
-    spaceBelow: { magnitude: 20, unit: 'PT' },
-  });
-
-  // Divider line
-  const divider1 = addText('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n');
-  formatText(divider1.startIndex, divider1.endIndex - 2, {
-    foregroundColor: { color: { rgbColor: COLORS.accent } },
-  });
-  formatParagraph(divider1.startIndex, divider1.endIndex, {
-    alignment: 'CENTER',
-  });
-
-  // ============================================================================
-  // TITLE SECTION
-  // ============================================================================
-
-  const titleRange = addText('PERSONALIZED WEALTH PROJECTION REPORT\n');
-  formatText(titleRange.startIndex, titleRange.endIndex - 1, {
-    bold: true,
-    fontSize: { magnitude: 18, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.primary } },
-  });
-  formatParagraph(titleRange.startIndex, titleRange.endIndex, {
-    alignment: 'CENTER',
-    spaceBelow: { magnitude: 8, unit: 'PT' },
-  });
-
-  const dateRange = addText(`Generated: ${today}\n\n`);
-  formatText(dateRange.startIndex, dateRange.endIndex - 2, {
-    fontSize: { magnitude: 10, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
-  });
-  formatParagraph(dateRange.startIndex, dateRange.endIndex, {
-    alignment: 'CENTER',
-    spaceBelow: { magnitude: 24, unit: 'PT' },
-  });
-
-  // ============================================================================
-  // HERO WEALTH SECTION
-  // ============================================================================
-
-  const heroTitleRange = addText('💰  YOUR FUTURE WEALTH  💰\n\n');
-  formatText(heroTitleRange.startIndex, heroTitleRange.endIndex - 2, {
-    bold: true,
-    fontSize: { magnitude: 16, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.primary } },
-  });
-  formatParagraph(heroTitleRange.startIndex, heroTitleRange.endIndex, {
-    alignment: 'CENTER',
-    spaceBelow: { magnitude: 12, unit: 'PT' },
-  });
-
-  // Giant wealth number
-  const wealthRange = addText(`${formatCurrency(finalWealth)}\n`);
-  formatText(wealthRange.startIndex, wealthRange.endIndex - 1, {
-    bold: true,
-    fontSize: { magnitude: 48, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.success } },
-  });
-  formatParagraph(wealthRange.startIndex, wealthRange.endIndex, {
-    alignment: 'CENTER',
-    spaceBelow: { magnitude: 8, unit: 'PT' },
-  });
-
-  // Timeline text
-  const timelineRange = addText(`In ${milestoneYear} years, at age ${userData.age + milestoneYear}\n\n`);
-  formatText(timelineRange.startIndex, timelineRange.endIndex - 2, {
-    fontSize: { magnitude: 14, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
-  });
-  formatParagraph(timelineRange.startIndex, timelineRange.endIndex, {
-    alignment: 'CENTER',
-    spaceBelow: { magnitude: 16, unit: 'PT' },
-  });
-
-  // Millionaire celebration
-  if (isMillionaire) {
-    const celebrationRange = addText('🎉  CONGRATULATIONS! You could become a MILLIONAIRE!  🎉\n\n');
-    formatText(celebrationRange.startIndex, celebrationRange.endIndex - 2, {
-      bold: true,
-      fontSize: { magnitude: 14, unit: 'PT' },
-      foregroundColor: { color: { rgbColor: COLORS.accent } },
-      backgroundColor: { color: { rgbColor: COLORS.primary } },
-    });
-    formatParagraph(celebrationRange.startIndex, celebrationRange.endIndex, {
-      alignment: 'CENTER',
-      spaceBelow: { magnitude: 20, unit: 'PT' },
-    });
-  }
-
-  // ============================================================================
-  // SWIPESWIPE IMPACT SECTION
-  // ============================================================================
-
-  const impactHeaderRange = addText('⭐  SWIPESWIPE IMPACT  ⭐\n\n');
-  formatText(impactHeaderRange.startIndex, impactHeaderRange.endIndex - 2, {
-    bold: true,
-    fontSize: { magnitude: 16, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.primary } },
-  });
-  formatParagraph(impactHeaderRange.startIndex, impactHeaderRange.endIndex, {
-    alignment: 'CENTER',
-    spaceBelow: { magnitude: 12, unit: 'PT' },
-  });
-
-  // Impact comparison - using styled text blocks
-  const withoutSSRange = addText(`Without ${companyName}:    `);
-  formatText(withoutSSRange.startIndex, withoutSSRange.endIndex, {
-    fontSize: { magnitude: 12, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
-  });
-
-  const withoutSSValueRange = addText(`${formatCurrency(wealthWithoutSS)}\n`);
-  formatText(withoutSSValueRange.startIndex, withoutSSValueRange.endIndex - 1, {
-    bold: true,
-    fontSize: { magnitude: 14, unit: 'PT' },
+    fontSize: { magnitude: 24, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.primary } },
   });
 
-  const withSSRange = addText(`With ${companyName}:          `);
-  formatText(withSSRange.startIndex, withSSRange.endIndex, {
-    fontSize: { magnitude: 12, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
+  const h2 = addText('Wealth Projection');
+  fmt(h2.start, h2.end, {
+    fontSize: { magnitude: 24, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.primary } },
   });
 
-  const withSSValueRange = addText(`${formatCurrency(finalWealth)}\n\n`);
-  formatText(withSSValueRange.startIndex, withSSValueRange.endIndex - 2, {
-    bold: true,
-    fontSize: { magnitude: 14, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.success } },
-  });
-
-  // Highlight the contribution
-  const bonusLabelRange = addText(`${companyName.toUpperCase()} ADDS:   `);
-  formatText(bonusLabelRange.startIndex, bonusLabelRange.endIndex, {
-    bold: true,
-    fontSize: { magnitude: 14, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.accent } },
-  });
-
-  const bonusValueRange = addText(`+${formatCurrency(swipeContribution)}\n\n`);
-  formatText(bonusValueRange.startIndex, bonusValueRange.endIndex - 2, {
-    bold: true,
-    fontSize: { magnitude: 18, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.success } },
-  });
-
-  formatParagraph(withoutSSRange.startIndex, bonusValueRange.endIndex, {
-    alignment: 'CENTER',
-    lineSpacing: 150,
-  });
-
-  const impactNoteRange = addText(`That's an extra ${formatCurrency(swipeContribution)} in your pocket by controlling impulse spending with ${companyName}!\n\n`);
-  formatText(impactNoteRange.startIndex, impactNoteRange.endIndex - 2, {
-    italic: true,
+  // Website on the right (using tabs for spacing)
+  const web = addText(`\t\t\t\t\t${SWIPESWIPE_WEBSITE}\n`);
+  fmt(web.start + 5, web.end - 1, {
     fontSize: { magnitude: 11, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
   });
-  formatParagraph(impactNoteRange.startIndex, impactNoteRange.endIndex, {
-    alignment: 'CENTER',
-    spaceBelow: { magnitude: 24, unit: 'PT' },
+
+  // Tagline
+  const tag = addText('A simple, realistic view of what consistency can build.\n\n');
+  fmt(tag.start, tag.end - 2, {
+    fontSize: { magnitude: 11, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
+    italic: true,
   });
 
-  // ============================================================================
-  // YOUR PROFILE SECTION
-  // ============================================================================
+  // ══════════════════════════════════════════════════════════════════════════
+  // PERSONALIZED WEALTH PROJECTION CARD
+  // ══════════════════════════════════════════════════════════════════════════
 
-  const profileHeaderRange = addText('📊  YOUR PROFILE\n\n');
-  formatText(profileHeaderRange.startIndex, profileHeaderRange.endIndex - 2, {
+  const pwp = addText('Personalized Wealth Projection\n');
+  fmt(pwp.start, pwp.end - 1, {
+    bold: true,
+    fontSize: { magnitude: 13, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.primary } },
+  });
+
+  const gen = addText(`Generated: ${today}\n`);
+  fmt(gen.start, gen.end - 1, {
+    fontSize: { magnitude: 10, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
+  });
+
+  const forYou = addText('For: You\n\n');
+  fmt(forYou.start, forYou.end - 2, {
+    fontSize: { magnitude: 10, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
+  });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // HERO SECTION - Green Banner with Net Worth
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // Top green border
+  const greenTop = addText('█████████████████████████████████████████████████████████████████████\n');
+  fmt(greenTop.start, greenTop.end - 1, {
+    foregroundColor: { color: { rgbColor: COLORS.success } },
+    fontSize: { magnitude: 4, unit: 'PT' },
+  });
+
+  // Hero label
+  const heroLbl = addText(`Estimated Net Worth at Age ${finalAge}\n`);
+  fmt(heroLbl.start, heroLbl.end - 1, {
+    fontSize: { magnitude: 13, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: { red: 0.18, green: 0.45, blue: 0.22 } } },
+  });
+  para(heroLbl.start, heroLbl.end, { alignment: 'CENTER', spaceAbove: { magnitude: 8, unit: 'PT' } });
+
+  // BIG WEALTH NUMBER
+  const bigNum = addText(`${formatCurrency(finalWealth)}\n`);
+  fmt(bigNum.start, bigNum.end - 1, {
+    bold: true,
+    fontSize: { magnitude: 48, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.primary } },
+  });
+  para(bigNum.start, bigNum.end, { alignment: 'CENTER' });
+
+  // Subtitle
+  const heroSub = addText('You are on a path to financial independence.\n');
+  fmt(heroSub.start, heroSub.end - 1, {
+    fontSize: { magnitude: 11, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: { red: 0.18, green: 0.45, blue: 0.22 } } },
+    italic: true,
+  });
+  para(heroSub.start, heroSub.end, { alignment: 'CENTER', spaceBelow: { magnitude: 8, unit: 'PT' } });
+
+  // Bottom green border
+  const greenBot = addText('█████████████████████████████████████████████████████████████████████\n\n');
+  fmt(greenBot.start, greenBot.end - 2, {
+    foregroundColor: { color: { rgbColor: COLORS.success } },
+    fontSize: { magnitude: 4, unit: 'PT' },
+  });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // THE SWIPESWIPE DIFFERENCE
+  // ══════════════════════════════════════════════════════════════════════════
+
+  const diffHdr = addText(`The ${companyName} Difference\n\n`);
+  fmt(diffHdr.start, diffHdr.end - 2, {
+    bold: true,
+    fontSize: { magnitude: 13, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.primary } },
+  });
+
+  // Without SwipeSwipe column
+  const withoutLbl = addText('Without ');
+  fmt(withoutLbl.start, withoutLbl.end, {
+    fontSize: { magnitude: 11, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
+  });
+
+  const withoutBold = addText(`${companyName}`);
+  fmt(withoutBold.start, withoutBold.end, {
+    bold: true,
+    fontSize: { magnitude: 11, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.primary } },
+  });
+
+  const spacer1 = addText('\t\t\t\t\t\tWith ');
+  fmt(spacer1.start + 6, spacer1.end, {
+    fontSize: { magnitude: 11, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
+  });
+
+  const withBold = addText(`${companyName}\n`);
+  fmt(withBold.start, withBold.end - 1, {
+    bold: true,
+    fontSize: { magnitude: 11, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.success } },
+  });
+
+  // Values
+  const val1 = addText(`${formatCurrency(wealthWithoutSS)}`);
+  fmt(val1.start, val1.end, {
+    bold: true,
+    fontSize: { magnitude: 20, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.primary } },
+  });
+
+  addText('\t\t\t\t\t\t');
+
+  const val2 = addText(`${formatCurrency(finalWealth)}\n\n`);
+  fmt(val2.start, val2.end - 2, {
+    bold: true,
+    fontSize: { magnitude: 20, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.success } },
+  });
+
+  // SwipeSwipe Impact centered
+  const impLbl = addText(`${companyName} Impact\n`);
+  fmt(impLbl.start, impLbl.end - 1, {
+    fontSize: { magnitude: 11, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
+  });
+  para(impLbl.start, impLbl.end, { alignment: 'CENTER' });
+
+  const impVal = addText(`+${formatCurrency(swipeContribution)}\n`);
+  fmt(impVal.start, impVal.end - 1, {
+    bold: true,
+    fontSize: { magnitude: 26, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.success } },
+  });
+  para(impVal.start, impVal.end, { alignment: 'CENTER' });
+
+  const impNote = addText('The long term value of controlling impulse spending.\n\n');
+  fmt(impNote.start, impNote.end - 2, {
+    fontSize: { magnitude: 10, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
+    italic: true,
+  });
+  para(impNote.start, impNote.end, { alignment: 'CENTER', spaceBelow: { magnitude: 12, unit: 'PT' } });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // YOUR STARTING PROFILE
+  // ══════════════════════════════════════════════════════════════════════════
+
+  const profHdr = addText('Your Starting Profile\n\n');
+  fmt(profHdr.start, profHdr.end - 2, {
+    bold: true,
+    fontSize: { magnitude: 13, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.primary } },
+  });
+
+  // Labels row
+  const profLbls = addText('Current Age\t\t\t\tAnnual Income\t\t\t\tCurrent Savings\n');
+  fmt(profLbls.start, profLbls.end - 1, {
+    fontSize: { magnitude: 10, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
+  });
+  para(profLbls.start, profLbls.end, { alignment: 'CENTER' });
+
+  // Values row
+  const profVals = addText(`${userData.age}\t\t\t\t${formatCurrency(userData.annualIncome)}\t\t\t\t${formatCurrency(userData.currentSavings)}\n\n`);
+  fmt(profVals.start, profVals.end - 2, {
     bold: true,
     fontSize: { magnitude: 16, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.primary } },
   });
-  formatParagraph(profileHeaderRange.startIndex, profileHeaderRange.endIndex, {
-    alignment: 'START',
-    spaceBelow: { magnitude: 8, unit: 'PT' },
-  });
+  para(profVals.start, profVals.end, { alignment: 'CENTER' });
 
-  // Profile details as formatted list
-  const profileItems = [
-    ['Current Age', `${userData.age} years`],
-    ['Annual Income', formatCurrency(userData.annualIncome)],
-    ['Current Savings', formatCurrency(userData.currentSavings)],
-    ['Your Monthly Investment', formatCurrency(userData.monthlyInvestment)],
-    [`${companyName} Monthly Savings`, formatCurrency(userData.swipeswipeSavings)],
-    ['TOTAL MONTHLY', formatCurrency(totalMonthly)],
-  ];
+  // ══════════════════════════════════════════════════════════════════════════
+  // MONTHLY CONTRIBUTIONS TABLE
+  // ══════════════════════════════════════════════════════════════════════════
 
-  for (let i = 0; i < profileItems.length; i++) {
-    const [label, value] = profileItems[i];
-    const isTotal = i === profileItems.length - 1;
-
-    const labelRange = addText(`${label}:  `);
-    formatText(labelRange.startIndex, labelRange.endIndex, {
-      fontSize: { magnitude: isTotal ? 12 : 11, unit: 'PT' },
-      foregroundColor: { color: { rgbColor: isTotal ? COLORS.primary : COLORS.textSecondary } },
-      bold: isTotal,
-    });
-
-    const valueRange = addText(`${value}\n`);
-    formatText(valueRange.startIndex, valueRange.endIndex - 1, {
-      fontSize: { magnitude: isTotal ? 14 : 12, unit: 'PT' },
-      foregroundColor: { color: { rgbColor: isTotal ? COLORS.success : COLORS.primary } },
-      bold: isTotal,
-    });
-
-    formatParagraph(labelRange.startIndex, valueRange.endIndex, {
-      indentFirstLine: { magnitude: 36, unit: 'PT' },
-      lineSpacing: isTotal ? 200 : 150,
-    });
-  }
-
-  addText('\n');
-
-  // ============================================================================
-  // WEALTH GROWTH TABLE SECTION
-  // ============================================================================
-
-  const tableHeaderRange = addText(`📈  WEALTH GROWTH OVER TIME (${ANNUAL_RETURN_RATE}% Annual Return)\n\n`);
-  formatText(tableHeaderRange.startIndex, tableHeaderRange.endIndex - 2, {
+  const tblHdr = addText('Monthly Contributions\n\n');
+  fmt(tblHdr.start, tblHdr.end - 2, {
     bold: true,
-    fontSize: { magnitude: 16, unit: 'PT' },
+    fontSize: { magnitude: 13, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.primary } },
   });
-  formatParagraph(tableHeaderRange.startIndex, tableHeaderRange.endIndex, {
-    alignment: 'START',
-    spaceBelow: { magnitude: 12, unit: 'PT' },
-  });
 
-  // Milestone years for projection breakdown
-  const years = [5, 10, 15, 20, 25, 30, 35];
-
-  // Create a beautiful styled table with proper formatting
-
-  // Table header
-  const tHeaderRow = addText(`  YEAR     WITHOUT ${companyName.toUpperCase().substring(0, 10)}     WITH ${companyName.toUpperCase().substring(0, 10)}       ${companyName.toUpperCase()} BONUS\n`);
-  formatText(tHeaderRow.startIndex, tHeaderRow.endIndex - 1, {
+  // Table header row
+  const colHdr = addText(`Year\t\tWithout ${companyName}\t\tWith ${companyName}\t\t${companyName} Added Value\n`);
+  fmt(colHdr.start, colHdr.end - 1, {
     bold: true,
     fontSize: { magnitude: 10, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.white } },
-    backgroundColor: { color: { rgbColor: COLORS.primary } },
-  });
-  formatParagraph(tHeaderRow.startIndex, tHeaderRow.endIndex, {
-    lineSpacing: 150,
+    foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
   });
 
-  // Table separator
-  const tSep = addText('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
-  formatText(tSep.startIndex, tSep.endIndex - 1, {
-    foregroundColor: { color: { rgbColor: COLORS.primary } },
+  // Separator
+  const sep = addText('─────────────────────────────────────────────────────────────────────\n');
+  fmt(sep.start, sep.end - 1, {
     fontSize: { magnitude: 8, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.lightGray } },
   });
 
-  // Table rows
-  years.forEach((year, idx) => {
-    const withoutSS = formatCurrency(projection.withoutSwipeSwipe[year]).padStart(14);
-    const withSS = formatCurrency(projection.withSwipeSwipe[year]).padStart(14);
-    const bonus = `+${formatCurrency(projection.swipeswipeContribution[year])}`.padStart(16);
+  // Data rows
+  const years = [5, 10, 15, 20, 25, 30, 35];
+  years.forEach((year) => {
+    const withoutSS = formatCurrency(projection.withoutSwipeSwipe[year]);
+    const withSS = formatCurrency(projection.withSwipeSwipe[year]);
+    const bonus = `+${formatCurrency(projection.swipeswipeContribution[year])}`;
 
-    const rowText = `  Year ${year.toString().padEnd(4)}  ${withoutSS}      ${withSS}     ${bonus}\n`;
-    const rowRange = addText(rowText);
-
-    const isEven = idx % 2 === 0;
-    formatText(rowRange.startIndex, rowRange.endIndex - 1, {
+    const rowYear = addText(`Year ${year}\t\t`);
+    fmt(rowYear.start, rowYear.end, {
       fontSize: { magnitude: 10, unit: 'PT' },
       foregroundColor: { color: { rgbColor: COLORS.primary } },
-      backgroundColor: { color: { rgbColor: isEven ? COLORS.lightGray : COLORS.white } },
     });
-    formatParagraph(rowRange.startIndex, rowRange.endIndex, {
-      lineSpacing: 150,
+
+    const rowWithout = addText(`${withoutSS}\t\t`);
+    fmt(rowWithout.start, rowWithout.end, {
+      fontSize: { magnitude: 10, unit: 'PT' },
+      foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
     });
-  });
 
-  // Bottom border
-  const tBottomBorder = addText('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n');
-  formatText(tBottomBorder.startIndex, tBottomBorder.endIndex - 2, {
-    foregroundColor: { color: { rgbColor: COLORS.primary } },
-    fontSize: { magnitude: 8, unit: 'PT' },
-  });
-
-  // ============================================================================
-  // KEY INSIGHTS SECTION
-  // ============================================================================
-
-  const insightsHeaderRange = addText('💡  KEY INSIGHTS\n\n');
-  formatText(insightsHeaderRange.startIndex, insightsHeaderRange.endIndex - 2, {
-    bold: true,
-    fontSize: { magnitude: 16, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.primary } },
-  });
-  formatParagraph(insightsHeaderRange.startIndex, insightsHeaderRange.endIndex, {
-    alignment: 'START',
-    spaceBelow: { magnitude: 8, unit: 'PT' },
-  });
-
-  const insights = [
-    `By investing ${formatCurrency(totalMonthly)}/month consistently, your money grows to ${formatCurrency(finalWealth)} through compound interest!`,
-    `${companyName} helps you save an extra ${formatCurrency(userData.swipeswipeSavings)}/month by controlling impulse purchases - that adds ${formatCurrency(swipeContribution)} to your wealth over ${milestoneYear} years!`,
-    `The earlier you start, the more time your money has to compound. Every dollar saved today is worth much more in the future!`,
-    `Small, consistent savings add up to BIG results. You don't need to be rich to become wealthy - you need consistency!`,
-  ];
-
-  insights.forEach(insight => {
-    const checkRange = addText('✓  ');
-    formatText(checkRange.startIndex, checkRange.endIndex, {
-      fontSize: { magnitude: 12, unit: 'PT' },
+    const rowWith = addText(`${withSS}\t\t`);
+    fmt(rowWith.start, rowWith.end, {
+      fontSize: { magnitude: 10, unit: 'PT' },
       foregroundColor: { color: { rgbColor: COLORS.success } },
       bold: true,
     });
 
-    const insightRange = addText(`${insight}\n\n`);
-    formatText(insightRange.startIndex, insightRange.endIndex - 2, {
-      fontSize: { magnitude: 11, unit: 'PT' },
-      foregroundColor: { color: { rgbColor: COLORS.primary } },
-    });
-    formatParagraph(checkRange.startIndex, insightRange.endIndex, {
-      indentFirstLine: { magnitude: 18, unit: 'PT' },
-      indentStart: { magnitude: 36, unit: 'PT' },
-      lineSpacing: 120,
-    });
-  });
-
-  // ============================================================================
-  // CALL TO ACTION SECTION
-  // ============================================================================
-
-  const ctaHeaderRange = addText('🚀  TAKE ACTION NOW\n\n');
-  formatText(ctaHeaderRange.startIndex, ctaHeaderRange.endIndex - 2, {
-    bold: true,
-    fontSize: { magnitude: 16, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.primary } },
-  });
-  formatParagraph(ctaHeaderRange.startIndex, ctaHeaderRange.endIndex, {
-    alignment: 'CENTER',
-    spaceBelow: { magnitude: 12, unit: 'PT' },
-  });
-
-  const ctaTextRange = addText('Download SwipeSwipe Chrome Extension\n');
-  formatText(ctaTextRange.startIndex, ctaTextRange.endIndex - 1, {
-    bold: true,
-    fontSize: { magnitude: 14, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.white } },
-    backgroundColor: { color: { rgbColor: COLORS.accent } },
-  });
-  formatParagraph(ctaTextRange.startIndex, ctaTextRange.endIndex, {
-    alignment: 'CENTER',
-    spaceBelow: { magnitude: 8, unit: 'PT' },
-  });
-
-  const ctaLinkRange = addText(`${CHROME_EXTENSION_LINK}\n\n`);
-  formatText(ctaLinkRange.startIndex, ctaLinkRange.endIndex - 2, {
-    fontSize: { magnitude: 9, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.primary } },
-    link: { url: CHROME_EXTENSION_LINK },
-    underline: true,
-  });
-  formatParagraph(ctaLinkRange.startIndex, ctaLinkRange.endIndex, {
-    alignment: 'CENTER',
-    spaceBelow: { magnitude: 8, unit: 'PT' },
-  });
-
-  const ctaNoteRange = addText('Start controlling your spending and building wealth TODAY!\n\n');
-  formatText(ctaNoteRange.startIndex, ctaNoteRange.endIndex - 2, {
-    italic: true,
-    fontSize: { magnitude: 11, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
-  });
-  formatParagraph(ctaNoteRange.startIndex, ctaNoteRange.endIndex, {
-    alignment: 'CENTER',
-    spaceBelow: { magnitude: 24, unit: 'PT' },
-  });
-
-  // ============================================================================
-  // ASSUMPTIONS SECTION
-  // ============================================================================
-
-  const assumptionsHeaderRange = addText('ASSUMPTIONS\n\n');
-  formatText(assumptionsHeaderRange.startIndex, assumptionsHeaderRange.endIndex - 2, {
-    bold: true,
-    fontSize: { magnitude: 12, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.primary } },
-  });
-
-  const assumptions = [
-    `Annual Return Rate: ${ANNUAL_RETURN_RATE}% (based on historical S&P 500 average)`,
-    'Compounding: Monthly',
-    'Contributions: Consistent monthly investments',
-    'Life Expectancy: 88 years',
-    'Inflation: Not adjusted (nominal values shown)',
-  ];
-
-  assumptions.forEach(assumption => {
-    const bulletRange = addText('•  ');
-    formatText(bulletRange.startIndex, bulletRange.endIndex, {
+    const rowBonus = addText(`${bonus}\n`);
+    fmt(rowBonus.start, rowBonus.end - 1, {
       fontSize: { magnitude: 10, unit: 'PT' },
-      foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
-    });
-
-    const assumptionRange = addText(`${assumption}\n`);
-    formatText(assumptionRange.startIndex, assumptionRange.endIndex - 1, {
-      fontSize: { magnitude: 10, unit: 'PT' },
-      foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
-    });
-    formatParagraph(bulletRange.startIndex, assumptionRange.endIndex, {
-      indentFirstLine: { magnitude: 18, unit: 'PT' },
-      indentStart: { magnitude: 36, unit: 'PT' },
+      foregroundColor: { color: { rgbColor: COLORS.success } },
+      italic: true,
     });
   });
 
   addText('\n');
 
-  // ============================================================================
-  // DISCLAIMER SECTION
-  // ============================================================================
+  // ══════════════════════════════════════════════════════════════════════════
+  // WHAT THIS MEANS FOR YOU
+  // ══════════════════════════════════════════════════════════════════════════
 
-  const disclaimerHeaderRange = addText('⚠️  DISCLAIMER\n\n');
-  formatText(disclaimerHeaderRange.startIndex, disclaimerHeaderRange.endIndex - 2, {
+  const meansHdr = addText('What This Means for You\n\n');
+  fmt(meansHdr.start, meansHdr.end - 2, {
     bold: true,
-    fontSize: { magnitude: 12, unit: 'PT' },
+    fontSize: { magnitude: 13, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.primary } },
   });
 
-  const disclaimerTextRange = addText(`This projection is for educational purposes only and does not constitute financial advice. Actual investment returns may vary significantly. The ${ANNUAL_RETURN_RATE}% annual return is based on historical S&P 500 averages, but past performance does not guarantee future results. Please consult with a qualified financial advisor for personalized investment advice.\n\n`);
-  formatText(disclaimerTextRange.startIndex, disclaimerTextRange.endIndex - 2, {
-    fontSize: { magnitude: 9, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
-    italic: true,
-  });
-  formatParagraph(disclaimerTextRange.startIndex, disclaimerTextRange.endIndex, {
-    lineSpacing: 120,
+  const insights = [
+    'Small savings can grow into significant wealth',
+    'Consistency matters more than timing the market',
+    `${companyName} helps reduce impulsive spending`,
+  ];
+
+  insights.forEach(insight => {
+    const bullet = addText('•  ');
+    fmt(bullet.start, bullet.end, {
+      fontSize: { magnitude: 11, unit: 'PT' },
+      foregroundColor: { color: { rgbColor: COLORS.primary } },
+    });
+    const txt = addText(`${insight}\n`);
+    fmt(txt.start, txt.end - 1, {
+      fontSize: { magnitude: 11, unit: 'PT' },
+      foregroundColor: { color: { rgbColor: COLORS.primary } },
+    });
   });
 
-  // ============================================================================
-  // FOOTER SECTION
-  // ============================================================================
+  addText('\n');
 
-  const footerDivider = addText('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n');
-  formatText(footerDivider.startIndex, footerDivider.endIndex - 2, {
-    foregroundColor: { color: { rgbColor: COLORS.accent } },
-  });
-  formatParagraph(footerDivider.startIndex, footerDivider.endIndex, {
-    alignment: 'CENTER',
-  });
+  // ══════════════════════════════════════════════════════════════════════════
+  // AFTER RETIREMENT BOX
+  // ══════════════════════════════════════════════════════════════════════════
 
-  const footerBrandRange = addText('Powered by SwipeSwipe\n');
-  formatText(footerBrandRange.startIndex, footerBrandRange.endIndex - 1, {
+  const retHdr = addText('After Retirement\n\n');
+  fmt(retHdr.start, retHdr.end - 2, {
     bold: true,
     fontSize: { magnitude: 14, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.primary } },
   });
-  formatParagraph(footerBrandRange.startIndex, footerBrandRange.endIndex, {
-    alignment: 'CENTER',
-    spaceBelow: { magnitude: 4, unit: 'PT' },
+
+  const retPoints = [
+    'Conservative Investment Mix',
+    `${POST_RETIREMENT_RETURN_RATE}% Average Annual Growth`,
+    'Designed for Long Term Income',
+  ];
+
+  retPoints.forEach(point => {
+    const check = addText('✓  ');
+    fmt(check.start, check.end, {
+      fontSize: { magnitude: 11, unit: 'PT' },
+      foregroundColor: { color: { rgbColor: COLORS.success } },
+      bold: true,
+    });
+    const ptxt = addText(`${point}\n`);
+    fmt(ptxt.start, ptxt.end - 1, {
+      fontSize: { magnitude: 11, unit: 'PT' },
+      foregroundColor: { color: { rgbColor: COLORS.primary } },
+    });
   });
 
-  const footerLinkRange = addText(`${SWIPESWIPE_WEBSITE}\n\n`);
-  formatText(footerLinkRange.startIndex, footerLinkRange.endIndex - 2, {
-    fontSize: { magnitude: 10, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.accent } },
-    link: { url: SWIPESWIPE_WEBSITE },
-    underline: true,
-  });
-  formatParagraph(footerLinkRange.startIndex, footerLinkRange.endIndex, {
-    alignment: 'CENTER',
-    spaceBelow: { magnitude: 8, unit: 'PT' },
+  addText('\n');
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // ASSUMPTIONS USED
+  // ══════════════════════════════════════════════════════════════════════════
+
+  const assHdr = addText('Assumptions Used\n\n');
+  fmt(assHdr.start, assHdr.end - 2, {
+    bold: true,
+    fontSize: { magnitude: 13, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.primary } },
   });
 
-  const footerTaglineRange = addText('"Helping average Americans build wealth through consistent saving and smart spending."\n');
-  formatText(footerTaglineRange.startIndex, footerTaglineRange.endIndex - 1, {
-    italic: true,
+  const assumptions = [
+    `${PRE_RETIREMENT_RETURN_RATE}% Annual Return (Pre-Retirement)`,
+    `${POST_RETIREMENT_RETURN_RATE}% Annual Return (Post-Retirement)`,
+    'Consistent Monthly Contributions',
+    'Nominal Values Shown',
+  ];
+
+  assumptions.forEach(ass => {
+    const chk = addText('✓  ');
+    fmt(chk.start, chk.end, {
+      fontSize: { magnitude: 10, unit: 'PT' },
+      foregroundColor: { color: { rgbColor: COLORS.success } },
+    });
+    const atxt = addText(`${ass}\n`);
+    fmt(atxt.start, atxt.end - 1, {
+      fontSize: { magnitude: 10, unit: 'PT' },
+      foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
+    });
+  });
+
+  addText('\n');
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // CTA BUTTON
+  // ══════════════════════════════════════════════════════════════════════════
+
+  const cta = addText(`Install ${companyName} Chrome Extension\n`);
+  fmt(cta.start, cta.end - 1, {
+    bold: true,
+    fontSize: { magnitude: 12, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.white } },
+    backgroundColor: { color: { rgbColor: COLORS.success } },
+    link: { url: CHROME_EXTENSION_LINK },
+  });
+  para(cta.start, cta.end, { alignment: 'CENTER', spaceAbove: { magnitude: 8, unit: 'PT' } });
+
+  const ctaLink = addText(`${SWIPESWIPE_WEBSITE}/chrome\n\n`);
+  fmt(ctaLink.start, ctaLink.end - 2, {
     fontSize: { magnitude: 10, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
+    link: { url: CHROME_EXTENSION_LINK },
   });
-  formatParagraph(footerTaglineRange.startIndex, footerTaglineRange.endIndex, {
-    alignment: 'CENTER',
+  para(ctaLink.start, ctaLink.end, { alignment: 'CENTER' });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // DISCLAIMER
+  // ══════════════════════════════════════════════════════════════════════════
+
+  const disc = addText(`This projection is for educational purposes only. The ${PRE_RETIREMENT_RETURN_RATE}% pre-retirement and ${POST_RETIREMENT_RETURN_RATE}% post-retirement returns are based on historical averages. Past performance does not guarantee future results. Please consult a financial advisor.\n`);
+  fmt(disc.start, disc.end - 1, {
+    fontSize: { magnitude: 8, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
+    italic: true,
   });
+  para(disc.start, disc.end, { alignment: 'CENTER', spaceAbove: { magnitude: 16, unit: 'PT' } });
 
-  // ============================================================================
-  // EXECUTE ALL REQUESTS
-  // ============================================================================
-
-  // Execute batch update with all formatting requests
+  // Execute batch update
   await window.gapi.client.docs.documents.batchUpdate({
     documentId: documentId,
     requests: requests,
   });
 
-  // Return the document URL
   return `https://docs.google.com/document/d/${documentId}/edit`;
 }
 
-/**
- * Export projection to Google Docs and open in new tab
- */
 export async function exportToGoogleDocs(
   projection: WealthProjection,
   userData: UserFinancialData,

@@ -17,7 +17,7 @@ import { parseInputWithContext } from '../utils/inputParser';
 import { calculateSwipeSwipeSavings, getSwipeSwipeSavingsExplanation } from '../utils/swipeswipeCalculator';
 import { WealthChart } from './WealthChart';
 import { HeroWealthDisplay } from './HeroWealthDisplay';
-import { initializeGoogleAPI, exportToGoogleDocs } from '../services/googleDocsService';
+import { initializeGoogleAPI, createWealthProjectionDoc as exportToGoogleDocsWithoutOpen } from '../services/googleDocsService';
 import './WealthChatbot.css';
 
 // SwipeSwipe Brand Colors
@@ -25,6 +25,41 @@ const SWIPESWIPE_COLORS = {
   primary: '#293A60',
   accent: '#FBC950',
   success: '#19B600',
+};
+
+// Helper function to convert URLs in text to clickable links
+const renderMessageWithLinks = (text: string): React.ReactNode => {
+  // URL regex pattern
+  const urlPattern = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlPattern);
+
+  return parts.map((part, index) => {
+    if (urlPattern.test(part)) {
+      // Reset the regex lastIndex
+      urlPattern.lastIndex = 0;
+      return (
+        <a
+          key={index}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            color: SWIPESWIPE_COLORS.success,
+            textDecoration: 'underline',
+            fontWeight: 600,
+            wordBreak: 'break-all',
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            window.open(part, '_blank', 'noopener,noreferrer');
+          }}
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
 };
 
 // ============================================================================
@@ -139,6 +174,9 @@ const WealthChatbot: React.FC<WealthChatbotProps> = ({
   // ============================================================================
 
   const addBotMessage = useCallback((content: string, isProjection: boolean = false) => {
+    // Don't add empty messages
+    if (!content || content.trim() === '') return;
+
     const newMessage: ChatMessage = {
       id: Date.now().toString(),
       role: 'assistant',
@@ -172,8 +210,8 @@ const WealthChatbot: React.FC<WealthChatbotProps> = ({
       monthlyInvestment: "How much do you invest each month? (This includes retirement accounts, stocks, etc. You can say 'I invest around $500 per month' or just '500')",
       
       projection: "Calculating your wealth projection...",
-      
-      freeChat: "Feel free to ask me anything about your financial projection or how to improve your wealth-building strategy!"
+
+      freeChat: "" // Empty - no follow-up message after projection
     };
     
     return prompts[stage];
@@ -195,31 +233,27 @@ const WealthChatbot: React.FC<WealthChatbotProps> = ({
     // Save user data for HeroWealthDisplay
     setFinalUserData(userData);
 
-    // First, show the hero wealth display (the main attraction!)
+    // First, show the chart (detailed view)
     setMessages(prev => [...prev, {
-      id: `hero-${Date.now()}`,
+      id: `chart-${Date.now()}`,
       role: 'assistant',
-      content: 'HERO_COMPONENT',
+      content: 'CHART_COMPONENT',
       timestamp: new Date(),
       isProjection: true
     }]);
 
-    // Add chart component after a delay
+    // Then show the hero wealth display at the END so user sees the big number
+    // This ensures the amount is visible where the scroll stops
     setTimeout(() => {
       setMessages(prev => [...prev, {
-        id: `chart-${Date.now()}`,
+        id: `hero-${Date.now()}`,
         role: 'assistant',
-        content: 'CHART_COMPONENT',
+        content: 'HERO_COMPONENT',
         timestamp: new Date(),
         isProjection: true
       }]);
-    }, 2500);
-
-    // Add a simple follow-up message after chart
-    setTimeout(() => {
-      addBotMessage(`Feel free to ask me any questions about your projection or how to improve your wealth-building strategy! You can also export your detailed report to Google Docs.`);
-    }, 3500);
-  }, [addBotMessage]);
+    }, 2000);
+  }, []);
 
   const generateLocalResponse = (message: string): string => {
     const lowerMessage = message.toLowerCase();
@@ -438,6 +472,10 @@ const WealthChatbot: React.FC<WealthChatbotProps> = ({
     setIsExporting(true);
     setExportError(null);
 
+    // Open popup IMMEDIATELY on user click to avoid browser blocking
+    // This must happen synchronously before any async operations
+    const popup = window.open('about:blank', '_blank');
+
     try {
       // Initialize Google API if not already done
       if (!googleInitialized) {
@@ -445,12 +483,24 @@ const WealthChatbot: React.FC<WealthChatbotProps> = ({
         setGoogleInitialized(true);
       }
 
-      // Export to Google Docs
-      const docUrl = await exportToGoogleDocs(projection, finalUserData, companyName);
+      // Export to Google Docs (this will NOT open a new window, we handle it)
+      const docUrl = await exportToGoogleDocsWithoutOpen(projection, finalUserData, companyName);
 
-      addBotMessage(`Your wealth projection report has been exported to Google Docs! You can view and edit it here: ${docUrl}`);
+      // Redirect the already-opened popup to the doc URL
+      if (popup && !popup.closed) {
+        popup.location.href = docUrl;
+      } else {
+        // Fallback: try to open again (might be blocked)
+        window.open(docUrl, '_blank');
+      }
+
+      addBotMessage(`Your wealth projection report has been exported to Google Docs!\n\nClick here to view: ${docUrl}`);
     } catch (error: any) {
       console.error('Google Docs export error:', error);
+      // Close the blank popup on error
+      if (popup && !popup.closed) {
+        popup.close();
+      }
       setExportError(error.message || 'Failed to export to Google Docs');
       addBotMessage(`Sorry, I couldn't export to Google Docs: ${error.message || 'Unknown error'}. Please try again.`);
     } finally {
@@ -532,9 +582,9 @@ const WealthChatbot: React.FC<WealthChatbotProps> = ({
               <div className="message-bubble">
                 {message.content === 'HERO_COMPONENT' && projection && finalUserData ? (
                   (() => {
-                    // Calculate years based on 88 years life expectancy, capped at 35
-                    const LIFE_EXPECTANCY = 88;
-                    const yearsToShow = Math.min(35, Math.max(5, LIFE_EXPECTANCY - finalUserData.age));
+                    // Calculate years based on 90 years life expectancy, capped at 45
+                    const LIFE_EXPECTANCY = 90;
+                    const yearsToShow = Math.min(45, Math.max(5, LIFE_EXPECTANCY - finalUserData.age));
                     // Round to nearest milestone year (5, 10, 15, 20, 25, 30, 35)
                     const milestoneYear = [5, 10, 15, 20, 25, 30, 35].reduce((prev, curr) =>
                       Math.abs(curr - yearsToShow) < Math.abs(prev - yearsToShow) ? curr : prev
@@ -552,7 +602,7 @@ const WealthChatbot: React.FC<WealthChatbotProps> = ({
                 ) : message.content === 'CHART_COMPONENT' && projection ? (
                   <WealthChart projection={projection} companyName={companyName} userAge={finalUserData?.age} />
                 ) : (
-                  <p style={{ whiteSpace: 'pre-wrap' }}>{message.content}</p>
+                  <p style={{ whiteSpace: 'pre-wrap' }}>{renderMessageWithLinks(message.content)}</p>
                 )}
                 <span className="message-time">
                   {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

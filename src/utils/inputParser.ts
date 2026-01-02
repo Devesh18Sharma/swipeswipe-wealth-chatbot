@@ -28,16 +28,8 @@ export function extractNumber(input: string): number | null {
     .trim();
 
   // Try to find numbers in various formats
-  // Pattern 1: Direct number (e.g., "20", "50000", "1,000")
-  const directNumber = cleaned.match(/(\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+\.?\d*)/);
-  if (directNumber) {
-    const num = parseFloat(directNumber[1].replace(/,/g, ''));
-    if (!isNaN(num) && num >= 0) {
-      return num;
-    }
-  }
-
-  // Pattern 2: Number with K/M/B suffixes (e.g., "50k", "1.5m")
+  // CRITICAL: Check K/M/B suffixes FIRST to avoid "150K" being parsed as just "150"
+  // Pattern 1: Number with K/M/B suffixes (e.g., "50k", "1.5m", "150K")
   const suffixMatch = cleaned.match(/(\d+\.?\d*)\s*([kmb])/i);
   if (suffixMatch) {
     const num = parseFloat(suffixMatch[1]);
@@ -46,6 +38,15 @@ export function extractNumber(input: string): number | null {
       if (suffix === 'k') return num * 1000;
       if (suffix === 'm') return num * 1000000;
       if (suffix === 'b') return num * 1000000000;
+    }
+  }
+
+  // Pattern 2: Direct number (e.g., "20", "50000", "1,000")
+  const directNumber = cleaned.match(/(\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+\.?\d*)/);
+  if (directNumber) {
+    const num = parseFloat(directNumber[1].replace(/,/g, ''));
+    if (!isNaN(num) && num >= 0) {
+      return num;
     }
   }
 

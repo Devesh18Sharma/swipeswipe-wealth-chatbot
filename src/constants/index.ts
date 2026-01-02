@@ -197,11 +197,14 @@ export const CONFIG = {
   
   // Projection Defaults
   projection: {
-    defaultReturnRate: 0.11, // 11% (S&P 500 historical average)
+    preRetirementReturnRate: 0.11, // 11% (S&P 500 historical average) before age 70
+    postRetirementReturnRate: 0.06, // 6% conservative return after age 70
+    defaultReturnRate: 0.11, // 11% (S&P 500 historical average) - legacy
     defaultInflationRate: 0.025, // 2.5%
     milestoneYears: [5, 10, 15, 20, 25, 30, 35],
     maxProjectionYears: 50,
-    lifeExpectancy: 88 // Assumed user life expectancy
+    retirementAge: 70, // Age when work contributions stop
+    lifeExpectancy: 90 // Assumed user life expectancy
   },
   
   // Validation Limits
@@ -268,6 +271,6 @@ To get started, what's your current age?`,
 How much do you think ${companyName} could help you save per month? (Enter your estimate)`,
 
   projection: 'Calculating your wealth projection...',
-  
-  freeChat: 'Feel free to ask me anything about your financial projection or how to improve your wealth-building strategy!'
+
+  freeChat: '' // Empty - no follow-up message after projection
 };

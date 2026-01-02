@@ -321,40 +321,62 @@ export const WealthChart: React.FC<WealthChartProps> = ({
           Your Wealth Growth Journey
         </h3>
 
-        {/* Return Rate Badge */}
+        {/* Return Rate Badges */}
         <div style={{
-          background: colors.primaryLight,
-          padding: '8px 14px',
-          borderRadius: '20px',
-          fontSize: '13px',
-          fontWeight: 600,
-          color: colors.primary,
           display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
+          gap: '8px',
+          flexWrap: 'wrap',
         }}>
-          <span style={{ color: colors.success }}>●</span>
-          11% Annual Return
+          <div style={{
+            background: colors.primaryLight,
+            padding: '6px 12px',
+            borderRadius: '16px',
+            fontSize: '12px',
+            fontWeight: 600,
+            color: colors.primary,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+          }}>
+            <span style={{ color: colors.success }}>●</span>
+            11% Pre-Retirement
+          </div>
+          <div style={{
+            background: colors.successLight,
+            padding: '6px 12px',
+            borderRadius: '16px',
+            fontSize: '12px',
+            fontWeight: 600,
+            color: colors.success,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+          }}>
+            <span style={{ color: colors.accent }}>●</span>
+            6% Post-Retirement
+          </div>
         </div>
       </div>
 
-      {/* Main Chart */}
-      <ResponsiveContainer width="100%" height={380}>
+      {/* Main Chart - Larger height for better visibility */}
+      <ResponsiveContainer width="100%" height={450}>
         <AreaChart
           data={chartData}
-          margin={{ top: 20, right: 30, left: 10, bottom: 10 }}
+          margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
         >
           <defs>
-            {/* Enhanced gradient for With SwipeSwipe */}
+            {/* Enhanced gradient for With SwipeSwipe - More visible fill */}
             <linearGradient id="colorWithSwipe" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={colors.success} stopOpacity={0.4} />
-              <stop offset="50%" stopColor={colors.success} stopOpacity={0.2} />
+              <stop offset="0%" stopColor={colors.success} stopOpacity={0.6} />
+              <stop offset="40%" stopColor={colors.success} stopOpacity={0.4} />
+              <stop offset="70%" stopColor={colors.success} stopOpacity={0.2} />
               <stop offset="100%" stopColor={colors.success} stopOpacity={0.05} />
             </linearGradient>
-            {/* Gradient for Without SwipeSwipe */}
+            {/* Gradient for Without SwipeSwipe - Slightly more visible */}
             <linearGradient id="colorWithoutSwipe" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={colors.primary} stopOpacity={0.15} />
-              <stop offset="100%" stopColor={colors.primary} stopOpacity={0.02} />
+              <stop offset="0%" stopColor={colors.primary} stopOpacity={0.25} />
+              <stop offset="50%" stopColor={colors.primary} stopOpacity={0.12} />
+              <stop offset="100%" stopColor={colors.primary} stopOpacity={0.03} />
             </linearGradient>
             {/* Glow effect for the main line */}
             <filter id="glowEffect" x="-20%" y="-20%" width="140%" height="140%">

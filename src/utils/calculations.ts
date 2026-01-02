@@ -11,9 +11,13 @@ import { UserFinancialData, WealthProjection, YearlyProjection, ProjectionAssump
 // CONSTANTS
 // ============================================================================
 
-const DEFAULT_ANNUAL_RETURN_RATE = 0.11; // 11% average market return (S&P 500 historical average)
+const PRE_RETIREMENT_RETURN_RATE = 0.11; // 11% average market return (S&P 500 historical average)
+const POST_RETIREMENT_RETURN_RATE = 0.06; // 6% conservative return after retirement
+const DEFAULT_ANNUAL_RETURN_RATE = PRE_RETIREMENT_RETURN_RATE; // For backward compatibility
 const DEFAULT_INFLATION_RATE = 0.025; // 2.5% inflation
 const COMPOUNDING_PERIODS_PER_YEAR = 12; // Monthly compounding
+const RETIREMENT_AGE = 70; // Age when work contributions stop
+const LIFE_EXPECTANCY = 90; // Assumed life expectancy
 const PROJECTION_YEARS = [5, 10, 15, 20, 25, 30, 35];
 
 // ============================================================================
@@ -75,13 +79,61 @@ export function calculateCompoundInterest(
 }
 
 /**
+ * Calculate future value with two-phase returns
+ * Phase 1 (before age 70): 11% return with full contributions
+ * Phase 2 (after age 70): 6% return with SwipeSwipe only
+ */
+function calculateTwoPhaseValue(
+  principal: number,
+  monthlyWorkContribution: number,
+  monthlySwipeSwipeContribution: number,
+  currentAge: number,
+  targetYear: number,
+  includeSwipeSwipe: boolean
+): number {
+  let value = principal;
+
+  // Calculate year by year to handle phase transition
+  for (let year = 1; year <= targetYear; year++) {
+    const ageAtYear = currentAge + year;
+
+    // Determine return rate based on age
+    const returnRate = ageAtYear <= RETIREMENT_AGE
+      ? PRE_RETIREMENT_RETURN_RATE
+      : POST_RETIREMENT_RETURN_RATE;
+
+    // Determine monthly contribution based on age
+    let monthlyContribution: number;
+    if (ageAtYear <= RETIREMENT_AGE) {
+      // Before retirement: work contributions + SwipeSwipe (if applicable)
+      monthlyContribution = includeSwipeSwipe
+        ? monthlyWorkContribution + monthlySwipeSwipeContribution
+        : monthlyWorkContribution;
+    } else {
+      // After retirement: SwipeSwipe only (if applicable)
+      monthlyContribution = includeSwipeSwipe ? monthlySwipeSwipeContribution : 0;
+    }
+
+    // Apply compound growth for this year
+    const monthlyRate = returnRate / 12;
+    for (let month = 1; month <= 12; month++) {
+      value = value * (1 + monthlyRate) + monthlyContribution;
+    }
+  }
+
+  return value;
+}
+
+/**
  * Main wealth projection calculation
- * Calculates projections at 5, 10, 15, 20, 25, 30, 35 years
- * With and without SwipeSwipe savings
+ * Two-phase model:
+ * - Before age 70: 11% return with full contributions (work + SwipeSwipe)
+ * - After age 70: 6% return with SwipeSwipe contributions only
+ * - Life expectancy: 90 years
  */
 export function calculateWealthProjection(
   userData: UserFinancialData,
-  annualReturnRate: number = DEFAULT_ANNUAL_RETURN_RATE
+  _annualReturnRate: number = DEFAULT_ANNUAL_RETURN_RATE // Kept for backward compatibility
 ): WealthProjection {
   const {
     currentSavings,
@@ -93,63 +145,85 @@ export function calculateWealthProjection(
 
   // Calculate base monthly contribution (savings + investment)
   const baseMonthly = monthlySavings + monthlyInvestment;
-  
+
   // Calculate increased monthly contribution based on user's goal
-  const increasedMonthly = baseMonthly * (1 + increasePercentage / 100);
-  
-  // Total monthly WITH SwipeSwipe
-  const totalMonthlyWithSS = increasedMonthly + swipeswipeSavings;
-  
+  const workMonthlyContribution = baseMonthly * (1 + increasePercentage / 100);
+
   // Initialize projection objects
   const withoutSwipeSwipe: Record<number, number> = {};
   const withSwipeSwipe: Record<number, number> = {};
   const swipeswipeContribution: Record<number, number> = {};
   const yearByYear: YearlyProjection[] = [];
 
+  // Calculate maximum years to project (until life expectancy)
+  const maxYears = Math.min(LIFE_EXPECTANCY - userData.age, 45);
+
   // Calculate for each milestone year
   PROJECTION_YEARS.forEach(years => {
-    // Without SwipeSwipe (base + increase only)
-    const valueWithoutSS = calculateFutureValue(
-      currentSavings,
-      increasedMonthly,
-      annualReturnRate,
-      years
-    );
-    
-    // With SwipeSwipe (base + increase + SS savings)
-    const valueWithSS = calculateFutureValue(
-      currentSavings,
-      totalMonthlyWithSS,
-      annualReturnRate,
-      years
-    );
-    
-    withoutSwipeSwipe[years] = Math.round(valueWithoutSS);
-    withSwipeSwipe[years] = Math.round(valueWithSS);
-    swipeswipeContribution[years] = Math.round(valueWithSS - valueWithoutSS);
+    if (years <= maxYears) {
+      // Without SwipeSwipe
+      const valueWithoutSS = calculateTwoPhaseValue(
+        currentSavings,
+        workMonthlyContribution,
+        0,
+        userData.age,
+        years,
+        false
+      );
+
+      // With SwipeSwipe
+      const valueWithSS = calculateTwoPhaseValue(
+        currentSavings,
+        workMonthlyContribution,
+        swipeswipeSavings,
+        userData.age,
+        years,
+        true
+      );
+
+      withoutSwipeSwipe[years] = Math.round(valueWithoutSS);
+      withSwipeSwipe[years] = Math.round(valueWithSS);
+      swipeswipeContribution[years] = Math.round(valueWithSS - valueWithoutSS);
+    }
   });
 
   // Calculate year-by-year breakdown
-  for (let year = 1; year <= 35; year++) {
-    const valueWithoutSS = calculateFutureValue(
+  let totalContribsWithSS = currentSavings;
+  let totalContribsWithoutSS = currentSavings;
+
+  for (let year = 1; year <= maxYears; year++) {
+    const ageAtYear = userData.age + year;
+
+    // Track contributions based on phase
+    if (ageAtYear <= RETIREMENT_AGE) {
+      totalContribsWithSS += (workMonthlyContribution + swipeswipeSavings) * 12;
+      totalContribsWithoutSS += workMonthlyContribution * 12;
+    } else {
+      totalContribsWithSS += swipeswipeSavings * 12;
+      // No work contributions after retirement for without SS
+    }
+
+    const valueWithoutSS = calculateTwoPhaseValue(
       currentSavings,
-      increasedMonthly,
-      annualReturnRate,
-      year
+      workMonthlyContribution,
+      0,
+      userData.age,
+      year,
+      false
     );
-    
-    const valueWithSS = calculateFutureValue(
+
+    const valueWithSS = calculateTwoPhaseValue(
       currentSavings,
-      totalMonthlyWithSS,
-      annualReturnRate,
-      year
+      workMonthlyContribution,
+      swipeswipeSavings,
+      userData.age,
+      year,
+      true
     );
-    
-    const totalContribsWithSS = currentSavings + (totalMonthlyWithSS * 12 * year);
-    
+
     yearByYear.push({
       year,
-      age: userData.age + year,
+      age: ageAtYear,
       withoutSwipeSwipe: Math.round(valueWithoutSS),
       withSwipeSwipe: Math.round(valueWithSS),
       totalContributions: Math.round(totalContribsWithSS),
@@ -159,7 +233,7 @@ export function calculateWealthProjection(
   }
 
   const assumptions: ProjectionAssumptions = {
-    annualReturnRate,
+    annualReturnRate: PRE_RETIREMENT_RETURN_RATE,
     inflationRate: DEFAULT_INFLATION_RATE,
     compoundingFrequency: 'monthly'
   };
