@@ -17,7 +17,7 @@ import { parseInputWithContext } from '../utils/inputParser';
 import { calculateSwipeSwipeSavings, getSwipeSwipeSavingsExplanation } from '../utils/swipeswipeCalculator';
 import { WealthChart } from './WealthChart';
 import { HeroWealthDisplay } from './HeroWealthDisplay';
-import { initializeGoogleAPI, createWealthProjectionDoc as exportToGoogleDocsWithoutOpen } from '../services/googleDocsService';
+import { initializeGoogleAPI, createWealthProjectionDoc as exportToGoogleDocsWithoutOpen, requestAuthorization, isSignedIn } from '../services/googleDocsService';
 import './WealthChatbot.css';
 
 // SwipeSwipe Brand Colors
@@ -472,67 +472,72 @@ const WealthChatbot: React.FC<WealthChatbotProps> = ({
     setIsExporting(true);
     setExportError(null);
 
-    // Open a blank window IMMEDIATELY on user click (synchronous)
-    // This prevents popup blockers since it's directly from user action
-    const newWindow = window.open('about:blank', '_blank');
-
-    if (newWindow) {
-      // Show loading state in the new window
-      newWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Creating your report...</title>
-          <style>
-            body {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              height: 100vh;
-              margin: 0;
-              background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
-            }
-            .container {
-              text-align: center;
-              padding: 40px;
-              background: white;
-              border-radius: 16px;
-              box-shadow: 0 4px 24px rgba(0,0,0,0.1);
-            }
-            .spinner {
-              width: 50px;
-              height: 50px;
-              border: 4px solid #DEEFF2;
-              border-top-color: #293A60;
-              border-radius: 50%;
-              animation: spin 1s linear infinite;
-              margin: 0 auto 20px;
-            }
-            @keyframes spin { to { transform: rotate(360deg); } }
-            h2 { color: #293A60; margin: 0 0 8px; }
-            p { color: #879CA8; margin: 0; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="spinner"></div>
-            <h2>Creating your report...</h2>
-            <p>Please wait while we generate your wealth projection</p>
-          </div>
-        </body>
-        </html>
-      `);
-    }
-
     try {
-      // Initialize Google API if not already done
+      // Step 1: Initialize Google API if not already done
       if (!googleInitialized) {
         await initializeGoogleAPI(googleClientId, googleApiKey);
         setGoogleInitialized(true);
       }
 
-      // Create the Google Doc
+      // Step 2: Request authorization FIRST if not signed in
+      // This must happen in direct response to user click to avoid popup blockers
+      if (!isSignedIn()) {
+        await requestAuthorization();
+      }
+
+      // Step 3: NOW open the window (after auth is complete)
+      const newWindow = window.open('about:blank', '_blank');
+
+      if (newWindow) {
+        // Show loading state in the new window
+        newWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Creating your report...</title>
+            <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+                background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+              }
+              .container {
+                text-align: center;
+                padding: 40px;
+                background: white;
+                border-radius: 16px;
+                box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+              }
+              .spinner {
+                width: 50px;
+                height: 50px;
+                border: 4px solid #DEEFF2;
+                border-top-color: #293A60;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin: 0 auto 20px;
+              }
+              @keyframes spin { to { transform: rotate(360deg); } }
+              h2 { color: #293A60; margin: 0 0 8px; }
+              p { color: #879CA8; margin: 0; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="spinner"></div>
+              <h2>Creating your report...</h2>
+              <p>Please wait while we generate your wealth projection</p>
+            </div>
+          </body>
+          </html>
+        `);
+      }
+
+      // Step 4: Create the Google Doc (user is already authorized)
       const docUrl = await exportToGoogleDocsWithoutOpen(projection, finalUserData, companyName);
 
       // Redirect the window to the doc
@@ -545,10 +550,6 @@ const WealthChatbot: React.FC<WealthChatbotProps> = ({
 
     } catch (error: any) {
       console.error('Google Docs export error:', error);
-      // Close the loading window on error
-      if (newWindow && !newWindow.closed) {
-        newWindow.close();
-      }
       setExportError(error.message || 'Failed to export to Google Docs');
       addBotMessage(`Sorry, I couldn't export to Google Docs: ${error.message || 'Unknown error'}. Please try again.`);
     } finally {
@@ -635,9 +636,13 @@ const WealthChatbot: React.FC<WealthChatbotProps> = ({
                     const yearsToAge90 = Math.max(5, LIFE_EXPECTANCY - finalUserData.age);
                     // Find the closest available milestone year
                     const allMilestoneYears = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
-                    const availableMilestones = allMilestoneYears.filter(y =>
+                    let availableMilestones = allMilestoneYears.filter(y =>
                       y <= yearsToAge90 && projection.withSwipeSwipe[y] !== undefined
                     );
+                    // Add exact year to reach age 90 if not in predefined milestones
+                    if (yearsToAge90 > 0 && !availableMilestones.includes(yearsToAge90) && projection.withSwipeSwipe[yearsToAge90] !== undefined) {
+                      availableMilestones = [...availableMilestones, yearsToAge90];
+                    }
                     const milestoneYear = availableMilestones[availableMilestones.length - 1] || 35;
                     return (
                       <HeroWealthDisplay

@@ -161,41 +161,46 @@ export function calculateWealthProjection(
   // All users project until age 90, no cap
   const maxYears = Math.max(5, LIFE_EXPECTANCY - userData.age);
 
-  // Calculate for each milestone year
-  PROJECTION_YEARS.forEach(years => {
-    if (years <= maxYears) {
-      // Year 0 is the starting point (current savings)
-      if (years === 0) {
-        withoutSwipeSwipe[0] = Math.round(currentSavings);
-        withSwipeSwipe[0] = Math.round(currentSavings);
-        swipeswipeContribution[0] = 0;
-        return;
-      }
+  // Build the list of years to calculate
+  // Include all milestone years that fit, PLUS the exact year to reach age 90
+  let yearsToCalculate = PROJECTION_YEARS.filter(y => y <= maxYears);
+  if (maxYears > 0 && !yearsToCalculate.includes(maxYears)) {
+    yearsToCalculate = [...yearsToCalculate, maxYears];
+  }
 
-      // Without SwipeSwipe
-      const valueWithoutSS = calculateTwoPhaseValue(
-        currentSavings,
-        workMonthlyContribution,
-        0,
-        userData.age,
-        years,
-        false
-      );
-
-      // With SwipeSwipe
-      const valueWithSS = calculateTwoPhaseValue(
-        currentSavings,
-        workMonthlyContribution,
-        swipeswipeSavings,
-        userData.age,
-        years,
-        true
-      );
-
-      withoutSwipeSwipe[years] = Math.round(valueWithoutSS);
-      withSwipeSwipe[years] = Math.round(valueWithSS);
-      swipeswipeContribution[years] = Math.round(valueWithSS - valueWithoutSS);
+  // Calculate for each year
+  yearsToCalculate.forEach(years => {
+    // Year 0 is the starting point (current savings)
+    if (years === 0) {
+      withoutSwipeSwipe[0] = Math.round(currentSavings);
+      withSwipeSwipe[0] = Math.round(currentSavings);
+      swipeswipeContribution[0] = 0;
+      return;
     }
+
+    // Without SwipeSwipe
+    const valueWithoutSS = calculateTwoPhaseValue(
+      currentSavings,
+      workMonthlyContribution,
+      0,
+      userData.age,
+      years,
+      false
+    );
+
+    // With SwipeSwipe
+    const valueWithSS = calculateTwoPhaseValue(
+      currentSavings,
+      workMonthlyContribution,
+      swipeswipeSavings,
+      userData.age,
+      years,
+      true
+    );
+
+    withoutSwipeSwipe[years] = Math.round(valueWithoutSS);
+    withSwipeSwipe[years] = Math.round(valueWithSS);
+    swipeswipeContribution[years] = Math.round(valueWithSS - valueWithoutSS);
   });
 
   // Calculate year-by-year breakdown
