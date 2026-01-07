@@ -138,9 +138,13 @@ export async function createWealthProjectionDoc(
   const yearsToAge90 = Math.max(5, LIFE_EXPECTANCY - userData.age);
   // Use extended milestone years and find the closest one to reach age 90
   const allMilestoneYears = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
-  const availableMilestones = allMilestoneYears.filter(y =>
+  let availableMilestones = allMilestoneYears.filter(y =>
     y <= yearsToAge90 && projection.withSwipeSwipe[y] !== undefined
   );
+  // Add exact year to reach age 90 if not in predefined milestones
+  if (yearsToAge90 > 0 && !availableMilestones.includes(yearsToAge90) && projection.withSwipeSwipe[yearsToAge90] !== undefined) {
+    availableMilestones = [...availableMilestones, yearsToAge90];
+  }
   const milestoneYear = availableMilestones[availableMilestones.length - 1] || 35;
 
   const finalWealth = projection.withSwipeSwipe[milestoneYear];

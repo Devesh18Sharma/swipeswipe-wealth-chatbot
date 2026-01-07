@@ -259,7 +259,12 @@ export const WealthChart: React.FC<WealthChartProps> = ({
 
   // Generate dynamic years array based on user's age to reach age 90
   const allMilestoneYears = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
-  const years = allMilestoneYears.filter(y => y <= yearsUntil90);
+  let years = allMilestoneYears.filter(y => y <= yearsUntil90);
+
+  // IMPORTANT: Always add the exact year to reach age 90 if not already included
+  if (yearsUntil90 > 0 && !years.includes(yearsUntil90)) {
+    years = [...years, yearsUntil90];
+  }
 
   // Prepare chart data for STACKED area chart
   // base = withoutSwipeSwipe (the foundation)
