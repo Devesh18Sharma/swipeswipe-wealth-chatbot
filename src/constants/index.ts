@@ -201,10 +201,10 @@ export const CONFIG = {
     postRetirementReturnRate: 0.06, // 6% conservative return after age 70
     defaultReturnRate: 0.11, // 11% (S&P 500 historical average) - legacy
     defaultInflationRate: 0.025, // 2.5%
-    milestoneYears: [5, 10, 15, 20, 25, 30, 35],
-    maxProjectionYears: 50,
+    milestoneYears: [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70], // Year 0 for starting point, extended to support age 90
+    maxProjectionYears: 70, // Extended to support projecting until age 90
     retirementAge: 70, // Age when work contributions stop
-    lifeExpectancy: 90 // Assumed user life expectancy
+    lifeExpectancy: 90 // All projections go to age 90
   },
   
   // Validation Limits
@@ -250,25 +250,23 @@ export const ERROR_MESSAGES = {
 export const STAGE_PROMPTS = {
   greeting: (companyName: string) => `Welcome to ${companyName}'s Wealth Planning Assistant! 🚀
 
-I'm here to help you discover how wealthy you could become. Let's create a personalized projection together.
+I'm here to show you how wealthy you could become through consistent saving and investing.
 
 To get started, what's your current age?`,
 
   age: 'What\'s your current age?',
-  
-  income: 'Great! Now, what\'s your annual income? (You can enter an approximate amount)',
-  
-  currentSavings: 'How much do you currently have saved and invested in total?',
-  
-  monthlySavings: 'How much do you save each month? (money set aside for emergencies, goals, etc.)',
-  
-  monthlyInvestment: 'And how much do you invest each month? (retirement accounts, stocks, etc.)',
-  
-  increaseGoal: 'By what percentage would you like to increase your monthly savings and investments? (e.g., 10, 20, 50)',
-  
-  swipeswipeSavings: (companyName: string) => `Excellent! Now let's factor in ${companyName}. On average, our users save an additional $150-500/month by controlling impulse purchases.
 
-How much do you think ${companyName} could help you save per month? (Enter your estimate)`,
+  income: 'Great! What\'s your annual income? (You can say something like \'around $50,000\' or just \'50k\')',
+
+  currentSavings: 'How much do you currently have saved and invested?',
+
+  monthlySavings: 'How much do you save each month?',
+
+  monthlyInvestment: 'How much do you invest each month? (This includes retirement accounts, stocks, etc.)',
+
+  increaseGoal: 'By what percentage would you like to increase your monthly savings and investments?',
+
+  swipeswipeSavings: (companyName: string) => `Based on your income, ${companyName} users typically save an additional amount by controlling impulse purchases.`,
 
   projection: 'Calculating your wealth projection...',
 

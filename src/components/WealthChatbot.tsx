@@ -199,21 +199,21 @@ const WealthChatbot: React.FC<WealthChatbotProps> = ({
 
   const getStagePrompt = useCallback((stage: ConversationState['stage']): string => {
     const prompts: Record<ConversationState['stage'], string> = {
-      greeting: `Welcome to ${companyName}'s Wealth Planning Assistant! 🚀\n\nI'm here to show you how wealthy you could become through consistent saving and investing. Let's create your personalized projection!\n\nTo get started, what's your current age?`,
-      
+      greeting: `Welcome to ${companyName}'s Wealth Planning Assistant! 🚀\n\nI'm here to show you how wealthy you could become through consistent saving and investing.\n\nTo get started, what's your current age?`,
+
       age: "What's your current age?",
-      
-      income: "Great! What's your annual income? (You can say something like 'around $50,000' or just '50000')",
-      
-      currentSavings: "How much do you currently have saved and invested? (You can say 'I have about $10,000' or just '10000')",
-      
-      monthlyInvestment: "How much do you invest each month? (This includes retirement accounts, stocks, etc. You can say 'I invest around $500 per month' or just '500')",
-      
+
+      income: "Great! What's your annual income? (You can say something like 'around $50,000' or just '50k')",
+
+      currentSavings: "How much do you currently have saved and invested?",
+
+      monthlyInvestment: "How much do you invest each month? (This includes retirement accounts, stocks, etc.)",
+
       projection: "Calculating your wealth projection...",
 
       freeChat: "" // Empty - no follow-up message after projection
     };
-    
+
     return prompts[stage];
   }, [companyName]);
 
@@ -472,9 +472,58 @@ const WealthChatbot: React.FC<WealthChatbotProps> = ({
     setIsExporting(true);
     setExportError(null);
 
-    // Open popup IMMEDIATELY on user click to avoid browser blocking
-    // This must happen synchronously before any async operations
-    const popup = window.open('about:blank', '_blank');
+    // Open a blank window IMMEDIATELY on user click (synchronous)
+    // This prevents popup blockers since it's directly from user action
+    const newWindow = window.open('about:blank', '_blank');
+
+    if (newWindow) {
+      // Show loading state in the new window
+      newWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Creating your report...</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              height: 100vh;
+              margin: 0;
+              background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+            }
+            .container {
+              text-align: center;
+              padding: 40px;
+              background: white;
+              border-radius: 16px;
+              box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+            }
+            .spinner {
+              width: 50px;
+              height: 50px;
+              border: 4px solid #DEEFF2;
+              border-top-color: #293A60;
+              border-radius: 50%;
+              animation: spin 1s linear infinite;
+              margin: 0 auto 20px;
+            }
+            @keyframes spin { to { transform: rotate(360deg); } }
+            h2 { color: #293A60; margin: 0 0 8px; }
+            p { color: #879CA8; margin: 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="spinner"></div>
+            <h2>Creating your report...</h2>
+            <p>Please wait while we generate your wealth projection</p>
+          </div>
+        </body>
+        </html>
+      `);
+    }
 
     try {
       // Initialize Google API if not already done
@@ -483,23 +532,22 @@ const WealthChatbot: React.FC<WealthChatbotProps> = ({
         setGoogleInitialized(true);
       }
 
-      // Export to Google Docs (this will NOT open a new window, we handle it)
+      // Create the Google Doc
       const docUrl = await exportToGoogleDocsWithoutOpen(projection, finalUserData, companyName);
 
-      // Redirect the already-opened popup to the doc URL
-      if (popup && !popup.closed) {
-        popup.location.href = docUrl;
+      // Redirect the window to the doc
+      if (newWindow && !newWindow.closed) {
+        newWindow.location.href = docUrl;
       } else {
-        // Fallback: try to open again (might be blocked)
-        window.open(docUrl, '_blank');
+        // Fallback: show link in chat if window was closed
+        addBotMessage(`Your report is ready! Open it here: ${docUrl}`);
       }
 
-      addBotMessage(`Your wealth projection report has been exported to Google Docs!\n\nClick here to view: ${docUrl}`);
     } catch (error: any) {
       console.error('Google Docs export error:', error);
-      // Close the blank popup on error
-      if (popup && !popup.closed) {
-        popup.close();
+      // Close the loading window on error
+      if (newWindow && !newWindow.closed) {
+        newWindow.close();
       }
       setExportError(error.message || 'Failed to export to Google Docs');
       addBotMessage(`Sorry, I couldn't export to Google Docs: ${error.message || 'Unknown error'}. Please try again.`);
@@ -554,10 +602,10 @@ const WealthChatbot: React.FC<WealthChatbotProps> = ({
           </svg>
         </div>
         <div className="chatbot-title">
-          <h2>{companyName} Wealth Advisor</h2>
+          <h2>How rich can you get</h2>
           <span className="status-badge">
             <span className="status-dot"></span>
-            Online
+            powered by {companyName}
           </span>
         </div>
       </div>
@@ -582,13 +630,15 @@ const WealthChatbot: React.FC<WealthChatbotProps> = ({
               <div className="message-bubble">
                 {message.content === 'HERO_COMPONENT' && projection && finalUserData ? (
                   (() => {
-                    // Calculate years based on 90 years life expectancy, capped at 45
+                    // Calculate years to reach age 90 (life expectancy)
                     const LIFE_EXPECTANCY = 90;
-                    const yearsToShow = Math.min(45, Math.max(5, LIFE_EXPECTANCY - finalUserData.age));
-                    // Round to nearest milestone year (5, 10, 15, 20, 25, 30, 35)
-                    const milestoneYear = [5, 10, 15, 20, 25, 30, 35].reduce((prev, curr) =>
-                      Math.abs(curr - yearsToShow) < Math.abs(prev - yearsToShow) ? curr : prev
+                    const yearsToAge90 = Math.max(5, LIFE_EXPECTANCY - finalUserData.age);
+                    // Find the closest available milestone year
+                    const allMilestoneYears = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
+                    const availableMilestones = allMilestoneYears.filter(y =>
+                      y <= yearsToAge90 && projection.withSwipeSwipe[y] !== undefined
                     );
+                    const milestoneYear = availableMilestones[availableMilestones.length - 1] || 35;
                     return (
                       <HeroWealthDisplay
                         targetAmount={projection.withSwipeSwipe[milestoneYear]}
