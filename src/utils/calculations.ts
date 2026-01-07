@@ -17,8 +17,10 @@ const DEFAULT_ANNUAL_RETURN_RATE = PRE_RETIREMENT_RETURN_RATE; // For backward c
 const DEFAULT_INFLATION_RATE = 0.025; // 2.5% inflation
 const COMPOUNDING_PERIODS_PER_YEAR = 12; // Monthly compounding
 const RETIREMENT_AGE = 70; // Age when work contributions stop
-const LIFE_EXPECTANCY = 90; // Assumed life expectancy
-const PROJECTION_YEARS = [5, 10, 15, 20, 25, 30, 35];
+const LIFE_EXPECTANCY = 90; // Assumed life expectancy - all projections go to age 90
+// Extended projection years to support projecting until age 90 for all users
+// Includes year 0 to show starting point on chart
+const PROJECTION_YEARS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
 
 // ============================================================================
 // CORE CALCULATION FUNCTIONS
@@ -155,12 +157,21 @@ export function calculateWealthProjection(
   const swipeswipeContribution: Record<number, number> = {};
   const yearByYear: YearlyProjection[] = [];
 
-  // Calculate maximum years to project (until life expectancy)
-  const maxYears = Math.min(LIFE_EXPECTANCY - userData.age, 45);
+  // Calculate maximum years to project (until life expectancy of 90)
+  // All users project until age 90, no cap
+  const maxYears = Math.max(5, LIFE_EXPECTANCY - userData.age);
 
   // Calculate for each milestone year
   PROJECTION_YEARS.forEach(years => {
     if (years <= maxYears) {
+      // Year 0 is the starting point (current savings)
+      if (years === 0) {
+        withoutSwipeSwipe[0] = Math.round(currentSavings);
+        withSwipeSwipe[0] = Math.round(currentSavings);
+        swipeswipeContribution[0] = 0;
+        return;
+      }
+
       // Without SwipeSwipe
       const valueWithoutSS = calculateTwoPhaseValue(
         currentSavings,

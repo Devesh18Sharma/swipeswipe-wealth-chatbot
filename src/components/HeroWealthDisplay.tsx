@@ -25,6 +25,8 @@ const colors = {
   successLight: '#D4FACE',
   accent: '#FBC950',
   accentDark: '#F4B545',
+  orange: '#F5692B',
+  orangeLight: '#FADBC9',
 };
 
 export const HeroWealthDisplay: React.FC<HeroWealthDisplayProps> = ({
@@ -162,30 +164,41 @@ export const HeroWealthDisplay: React.FC<HeroWealthDisplayProps> = ({
         in {yearsToRetirement} years at age {retirementAge}
       </motion.div>
 
-      {/* SwipeSwipe Contribution Badge */}
+      {/* SwipeSwipe Contribution Badge - BIGGER and more prominent */}
       <AnimatePresence>
         {showContribution && swipeswipeContribution > 0 && (
           <motion.div
-            className="hero-swipeswipe-contribution"
             initial={{ opacity: 0, y: 10, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.4, ease: 'easeOut' }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px',
+              padding: '16px 24px',
+              background: `linear-gradient(135deg, ${colors.accent}30 0%, ${colors.accentDark}20 100%)`,
+              borderRadius: '12px',
+              border: `2px solid ${colors.accent}`,
+              marginTop: '16px',
+            }}
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="12" y1="1" x2="12" y2="23" />
-              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
-            +{formatCurrency(swipeswipeContribution)} from SwipeSwipe
+            <span style={{ fontSize: '24px' }}>💰</span>
+            <span style={{
+              fontSize: '1.5rem',
+              fontWeight: 700,
+              color: colors.primary,
+            }}>
+              +{formatCurrency(swipeswipeContribution)}
+            </span>
+            <span style={{
+              fontSize: '1rem',
+              fontWeight: 600,
+              color: colors.primary,
+            }}>
+              from SwipeSwipe
+            </span>
           </motion.div>
         )}
       </AnimatePresence>

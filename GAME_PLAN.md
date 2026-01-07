@@ -1,25 +1,28 @@
-# SwipeSwipe Wealth Chatbot - Implementation Game Plan
+# How Rich Can You Get - Implementation Game Plan
 
-**Version:** 3.0
-**Last Updated:** December 2024
-**Status:** ✅ Implemented
+**Version:** 1.0.0
+**Last Updated:** January 2025
+**Status:** Production Ready
 
 ---
 
 ## Executive Summary
 
-The SwipeSwipe Wealth Chatbot is a production-ready, AI-powered wealth visualization tool that inspires average Americans to believe they can become wealthy through consistent saving and investing.
+"How Rich Can You Get" powered by SwipeSwipe is a production-ready, AI-powered wealth visualization tool that inspires average Americans to believe they can become wealthy through consistent saving and investing.
 
 ### Core Vision
 > "Show average Americans they can become wealthy through consistent saving & investing over time - make it simple, not complex."
 
 ### Key Features (Implemented)
 1. **Prominent Wealth Number** - Giant animated hero display with confetti celebration
-2. **Visual Storytelling Graph** - Interactive Recharts with tooltips and SwipeSwipe impact highlight
-3. **SwipeSwipe Brand Theme** - Deep blue (#293A60) + Yellow accent (#FBC950)
+2. **Stacked Area Chart** - Deep Blue base + Golden Yellow SwipeSwipe contribution on top
+3. **SwipeSwipe Brand Theme** - Deep Blue (#293A60) + Golden Yellow (#FBC950)
 4. **Gemini AI Integration** - Google Gemini 1.5 Flash for intelligent responses
-5. **Google Docs Export** - Beautiful branded wealth projection reports
-6. **Delightful Animations** - Confetti, counting animations, and celebrations
+5. **Google Docs Export** - Beautiful branded reports with clickable website & extension links
+6. **Age 90 Projections** - Chart starts from current age and projects until age 90
+7. **Two-Phase Financial Model** - 11% pre-retirement, 6% post-retirement returns
+8. **Delightful Animations** - Confetti, counting animations, and celebrations
+9. **Dark Mode Support** - Automatic theme based on system preference
 
 ---
 
@@ -29,18 +32,25 @@ The SwipeSwipe Wealth Chatbot is a production-ready, AI-powered wealth visualiza
 React 18.2 + TypeScript 5.1
 ├── Vite (build tool)
 ├── Google Gemini API (@google/generative-ai)
-├── Recharts (interactive charts)
+├── Recharts (stacked area charts)
 ├── Framer Motion (animations)
 ├── canvas-confetti (celebrations)
 ├── Google Docs API (export)
-└── CSS (SwipeSwipe theme variables)
+└── CSS Variables (SwipeSwipe theme)
 ```
 
 ### Key Configuration
-- **Annual Return Rate:** 11% (S&P 500 historical average)
-- **Life Expectancy:** 88 years (for projection calculations)
+
+**Two-Phase Financial Model:**
+| Phase | Age Range | Return Rate | Contributions |
+|-------|-----------|-------------|---------------|
+| Pre-Retirement | Until 70 | 11% | Work + SwipeSwipe |
+| Post-Retirement | 70+ | 6% | SwipeSwipe only |
+
+- **Life Expectancy:** 90 years (all projections go to age 90)
 - **Compounding:** Monthly
-- **Milestone Years:** 5, 10, 15, 20, 25, 30, 35
+- **Milestone Years:** 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70 (starts from year 0)
+- **Max Projection:** 70 years (dynamic based on user age to reach 90)
 
 ---
 
@@ -52,16 +62,17 @@ React 18.2 + TypeScript 5.1
 src/
 ├── components/
 │   ├── WealthChatbot.tsx      # Main chatbot with conversation flow
-│   ├── WealthChatbot.css      # SwipeSwipe themed styles
-│   ├── HeroWealthDisplay.tsx  # Giant animated wealth number
-│   ├── WealthChart.tsx        # Recharts interactive visualization
+│   ├── WealthChatbot.css      # SwipeSwipe themed styles + dark mode
+│   ├── HeroWealthDisplay.tsx  # Giant animated wealth number + contribution badge
+│   ├── WealthChart.tsx        # Stacked area chart (Blue + Yellow)
 │   └── AnimatedNumber.tsx     # Number counting animation
 ├── services/
 │   ├── geminiService.ts       # Google Gemini AI integration
 │   └── googleDocsService.ts   # Google Docs export
 ├── utils/
-│   ├── calculations.ts        # Financial calculations (11% return)
-│   ├── guardrails.ts          # Topic filters + AI response
+│   ├── calculations.ts        # Two-phase financial calculations
+│   ├── guardrails.ts          # Topic filters + AI safety
+│   ├── inputParser.ts         # Natural language input parsing
 │   ├── animations.ts          # Confetti celebrations
 │   └── swipeswipeCalculator.ts # Income-based savings
 ├── types/
@@ -72,31 +83,71 @@ src/
 
 ---
 
-## Color System (from THEME.md)
+## Color System
 
+### Chart Colors (Stacked Area Design)
+```css
+/* Base Investment Area */
+--chart-base: #293A60;           /* Deep Blue - Your Investment */
+
+/* SwipeSwipe Contribution Area (stacked on top) */
+--chart-contribution: #FBC950;   /* Golden Yellow - SwipeSwipe Adds */
+```
+
+### UI Colors
 ```css
 :root {
-  /* Primary Colors */
-  --color-primary: #293A60;        /* Deep Blue - main brand */
-  --color-primary-light: #DEEFF2;  /* Light variant */
-  --color-primary-dark: #1a2640;   /* Darker shade */
+  /* Primary Brand Colors */
+  --brand-primary: #293A60;        /* Deep Blue - main brand */
+  --brand-primary-dark: #1a2640;   /* Darker shade */
+  --brand-primary-light: #DEEFF2;  /* Light blue - Key Insight box */
 
   /* Accent Colors */
-  --color-swipe: #FBC950;          /* Swipe Yellow - CTAs, highlights */
-  --color-orange: #F5692B;         /* Secondary accent */
+  --brand-accent: #FBC950;         /* Golden Yellow - SwipeSwipe contribution */
+  --brand-accent-dark: #F4B545;    /* Darker yellow */
+  --brand-accent-light: #FEF3D9;   /* Light golden for backgrounds */
 
   /* Semantic Colors */
-  --color-success: #19B600;        /* Positive states, With SwipeSwipe line */
+  --color-success: #19B600;        /* Positive states */
   --color-success-light: #D4FACE;
   --color-warning: #FBC950;
   --color-danger: #DD2A11;
+  --color-info: #23A6F0;
+  --color-info-light: #B2DFF2;
 
-  /* Neutrals */
-  --color-text: #293A60;
-  --color-text-secondary: #879CA8;
-  --color-background: #FAFAFA;
+  /* Backgrounds */
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #FAFAFA;
+  --bg-tertiary: #F3F6F9;
+
+  /* Text Colors */
+  --text-primary: #293A60;
+  --text-secondary: #879CA8;
+  --text-muted: #949EAB;
 }
 ```
+
+---
+
+## Chart Visual Design
+
+The wealth chart uses a **stacked area design** inspired by SwipeSwipe's existing calculators:
+
+### Visual Hierarchy
+1. **Deep Blue (#293A60)** - "Your Investment" (base layer)
+   - Represents investment growth without SwipeSwipe
+   - Solid, trustworthy foundation color
+
+2. **Golden Yellow (#FBC950)** - "SwipeSwipe Adds" (stacked on top)
+   - Represents the additional value SwipeSwipe contributes
+   - Vibrant, attention-grabbing highlight
+   - Clearly shows the "bonus" users get
+
+### Chart Elements
+- **Legend**: Blue square + Yellow square with labels
+- **"SwipeSwipe adds" box**: Golden yellow background with contribution amount
+- **"Key Insight" box**: Light blue background (#DEEFF2) - differentiated from yellow
+- **Tooltip**: Shows total, base investment, and SwipeSwipe contribution breakdown
 
 ---
 
@@ -105,37 +156,58 @@ src/
 | Annual Income | Monthly SwipeSwipe Savings |
 |---------------|----------------------------|
 | < $50,000     | $75/month                  |
-| $50K - $75K   | $125/month                 |
-| $75K - $100K  | $175/month                 |
-| $100K - $150K | $250/month                 |
-| $150K - $200K | $350/month                 |
-| $200K - $300K | $450/month                 |
+| $50K - $100K  | $100/month                 |
+| $100K - $150K | $150/month                 |
+| $150K - $200K | $200/month                 |
+| $200K - $300K | $350/month                 |
 | > $300K       | $500/month                 |
 
 ---
 
 ## User Flow
 
-1. **Greeting** - Welcome message, ask for age
+1. **Greeting** - "How rich can you get powered by SwipeSwipe"
 2. **Age Input** - Collect user's current age
-3. **Income Input** - Auto-calculate SwipeSwipe savings based on income
+3. **Income Input** - Auto-calculate SwipeSwipe savings based on income bracket
 4. **Current Savings** - Collect existing savings/investments
 5. **Monthly Investment** - How much they invest monthly
 6. **Projection Display**:
-   - Hero Wealth Display (animated, confetti)
-   - Interactive Chart (Recharts with tooltips)
-   - Follow-up message with export option
+   - Stacked Area Chart (Deep Blue base + Golden Yellow contribution)
+   - Hero Wealth Display (animated, confetti celebration)
+   - Golden yellow SwipeSwipe contribution badge
 7. **Free Chat** - AI-powered Q&A about their projection
+
+---
+
+## Two-Phase Calculation Model
+
+The chatbot uses a sophisticated two-phase calculation that reflects realistic retirement scenarios:
+
+### Phase 1: Pre-Retirement (Age < 70)
+- **Return Rate:** 11% (S&P 500 historical average)
+- **Contributions:** Work savings + SwipeSwipe savings
+- **Compounding:** Monthly
+
+### Phase 2: Post-Retirement (Age 70+)
+- **Return Rate:** 6% (Conservative allocation)
+- **Contributions:** SwipeSwipe savings only (no work income)
+- **Compounding:** Monthly
+
+This model accounts for:
+- Higher growth potential during working years
+- More conservative allocation after retirement
+- Continued SwipeSwipe savings habit even in retirement
+- Realistic 90-year life expectancy
 
 ---
 
 ## Google Docs Export
 
 The export creates a beautiful branded report with:
-- SwipeSwipe header with website link (https://swipeswipe.co/)
-- Chrome extension download link
+- "How rich can you get - powered by SwipeSwipe" header
+- Clickable website link (https://swipeswipe.co/)
+- Chrome extension download link (clickable)
 - Giant wealth number display
-- ASCII chart visualization
 - Detailed year-by-year breakdown table
 - Key insights section
 - Assumptions and disclaimer
@@ -158,43 +230,60 @@ VITE_OPENAI_API_KEY=your_openai_key
 
 ---
 
-## Recent Changes (v3.0)
+## Guardrails & Safety
 
-### ✅ Completed
-1. **Removed detailed breakdown from chatbot** - Now shows only Hero + Chart
-2. **Updated return rate to 11%** - Based on S&P 500 historical average
-3. **Added 88-year life expectancy** - Dynamic projection based on user age
-4. **Enhanced WealthChart** - Better visuals, glow effects, SwipeSwipe impact highlight
-5. **Redesigned Google Docs export** - Stunning ASCII art, tables, branding, links
-6. **Updated documentation** - Consolidated and updated all MD files
+### Allowed Topics
+- Savings & investing
+- Retirement planning
+- Wealth building
+- Budgeting
+- SwipeSwipe features
+- Projection calculations
+- Debt management
+- Income growth
+- Financial education
+- Recalculation requests
 
-### Key Improvements
-- Chart now shows "11% Annual Return" badge
-- Projection adapts to user's age (88 - age = years to show)
-- Google Docs includes Chrome extension download link
-- ASCII chart in export shows visual comparison
-- SwipeSwipe impact prominently displayed throughout
+### Blocked Topics
+- Programming/code
+- Weather
+- Sports
+- Entertainment
+- Politics
+- Medical/legal advice
+- Specific stock picks
+
+### Safety Features
+- Jailbreak detection
+- Off-topic filtering
+- Input validation
+- Professional redirects
 
 ---
 
 ## Testing Checklist
 
 ### Visual Testing
-- [x] SwipeSwipe blue (#293A60) applied to header
-- [x] Swipe yellow (#FBC950) on CTAs and highlights
+- [x] SwipeSwipe blue (#293A60) applied to header and base chart area
+- [x] Golden yellow (#FBC950) on SwipeSwipe contribution area
 - [x] Hero number is unmissable and animated
-- [x] Chart draws smoothly with tooltips working
+- [x] Stacked area chart draws smoothly with tooltips working
 - [x] Confetti fires on projection reveal
-- [x] "11% Annual Return" badge visible on chart
+- [x] Return rate badges visible on chart header
+- [x] Key Insight box has light blue background (differentiated)
+- [x] SwipeSwipe adds box has golden yellow background
 - [x] Responsive on mobile (375px+)
+- [x] Dark mode works correctly
 
 ### Functional Testing
 - [x] 4-step flow works: age → income → savings → investment
-- [x] SwipeSwipe savings auto-calculated correctly by income
+- [x] SwipeSwipe savings auto-calculated correctly by income bracket
+- [x] Chart starts from current age (year 0) to age 90
 - [x] Gemini AI responds appropriately
-- [x] Google Docs export generates correct document
-- [x] Life expectancy calculation works (88 - age)
-- [x] Milestone year rounding works correctly
+- [x] Google Docs export generates correct document with clickable links
+- [x] Two-phase calculation works (11% → 6% at age 70)
+- [x] Life expectancy calculation works (90 - age)
+- [x] Milestone year calculations correct
 
 ---
 
@@ -210,19 +299,53 @@ VITE_OPENAI_API_KEY=your_openai_key
 
 ---
 
+## Key Implementation Details
+
+### Chart Data Structure
+```typescript
+// Stacked area chart data
+const chartData = years.map(year => ({
+  year,
+  base: withoutSwipeSwipe[year],           // Deep Blue area
+  swipeswipeContribution: contribution[year], // Golden Yellow area (stacked)
+  withSwipeSwipe: base + contribution,      // Total
+}));
+```
+
+### Input Parsing
+- Accepts natural language: "around $50k", "fifty thousand", "50000"
+- Context-aware validation based on field type
+- Helpful error messages with specific guidance
+
+### Millionaire Celebration
+- Extra confetti burst when projection exceeds $1M
+- Special gradient styling on wealth amount
+- Celebration message in hero display
+- Yellow millionaire badge in Key Insight box
+
+### Responsive Design
+- Mobile-first approach
+- Max width 900px (1000px on large screens)
+- Flexbox layout for flexibility
+- Custom scrollbar styling
+- Message bubbles adapt to screen size
+
+---
+
 ## Summary
 
 The SwipeSwipe Wealth Chatbot delivers an inspiring, visually stunning experience that:
 
 1. **Makes the wealth number unmissable** - Giant, animated, celebratory
-2. **Tells a story with the chart** - Interactive, 11% return, clear SwipeSwipe impact
-3. **Applies SwipeSwipe brand** - Deep blue + yellow accent throughout
+2. **Tells a story with the chart** - Stacked areas clearly show SwipeSwipe's impact
+3. **Applies SwipeSwipe brand** - Deep blue base + golden yellow contribution
 4. **Delights with animations** - Confetti, counting, glow effects
-5. **Enables beautiful sharing** - Google Docs with full branding
+5. **Enables beautiful sharing** - Google Docs with full branding and clickable links
 6. **Uses smart AI** - Gemini for intelligent, on-topic responses
+7. **Models realistic scenarios** - Two-phase returns based on age
 
 **The goal:** When users see their projection, they feel "Wow, I can actually become wealthy. This is simple and achievable."
 
 ---
 
-*Last Updated: December 2024*
+*Last Updated: January 2025*

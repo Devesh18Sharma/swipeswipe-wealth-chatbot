@@ -1,7 +1,10 @@
 /**
  * WealthChart Component
  * Interactive wealth projection visualization using Recharts
- * Enhanced visual design that clearly shows SwipeSwipe benefit
+ *
+ * Design: Stacked area chart showing:
+ * - Deep Blue (#293A60): Base investment growth (without SwipeSwipe)
+ * - Orange (#F5692B): SwipeSwipe contribution stacked on top (the bonus)
  */
 
 import React from 'react';
@@ -27,29 +30,32 @@ interface WealthChartProps {
 
 // SwipeSwipe Theme Colors
 const colors = {
-  primary: '#293A60',
+  primary: '#293A60',          // Deep Blue - base investment
   primaryLight: '#DEEFF2',
+  primaryMuted: '#4A5568',     // Muted blue for secondary elements
+  accent: '#FBC950',           // Golden Yellow - SwipeSwipe contribution (THE HIGHLIGHT)
+  accentDark: '#F4B545',
+  accentLight: '#FEF3D9',      // Light golden for backgrounds
   success: '#19B600',
   successLight: '#D4FACE',
-  accent: '#FBC950',
-  accentDark: '#F4B545',
   textPrimary: '#293A60',
   textSecondary: '#879CA8',
   bgSecondary: '#FAFAFA',
   border: '#F3F6F9',
   white: '#FFFFFF',
-  swipeSwipeGradientStart: '#19B600',
-  swipeSwipeGradientEnd: '#0D8C00',
 };
 
-// Custom tooltip component with enhanced styling
-const CustomTooltip: React.FC<any> = ({ active, payload, label, companyName }) => {
+// Custom tooltip component - redesigned for stacked chart
+const CustomTooltip: React.FC<any> = ({ active, payload, label, companyName, userAge }) => {
   if (active && payload && payload.length) {
-    const withSwipe = payload.find((p: any) => p.dataKey === 'withSwipeSwipe');
-    const withoutSwipe = payload.find((p: any) => p.dataKey === 'withoutSwipeSwipe');
-    const contribution = withSwipe && withoutSwipe
-      ? withSwipe.value - withoutSwipe.value
-      : 0;
+    // For stacked chart: base = withoutSwipeSwipe, contribution = swipeswipeContribution
+    const baseData = payload.find((p: any) => p.dataKey === 'base');
+    const contributionData = payload.find((p: any) => p.dataKey === 'swipeswipeContribution');
+
+    const baseValue = baseData?.value || 0;
+    const contributionValue = contributionData?.value || 0;
+    const totalValue = baseValue + contributionValue;
+    const displayAge = userAge ? `Age ${userAge + label}` : `Year ${label}`;
 
     return (
       <div
@@ -58,8 +64,8 @@ const CustomTooltip: React.FC<any> = ({ active, payload, label, companyName }) =
           padding: '20px',
           borderRadius: '16px',
           boxShadow: '0 8px 32px rgba(41, 58, 96, 0.2)',
-          border: `2px solid ${colors.accent}`,
-          minWidth: '240px',
+          border: `2px solid ${colors.primary}`,
+          minWidth: '260px',
         }}
       >
         <p style={{
@@ -70,157 +76,140 @@ const CustomTooltip: React.FC<any> = ({ active, payload, label, companyName }) =
           borderBottom: `2px solid ${colors.border}`,
           paddingBottom: '12px',
         }}>
-          Year {label}
+          {displayAge}
         </p>
 
-        {/* With SwipeSwipe */}
+        {/* Total With SwipeSwipe - The big number */}
         <div style={{
-          marginBottom: '12px',
-          padding: '12px',
-          background: colors.successLight,
-          borderRadius: '10px',
-          border: `1px solid ${colors.success}`,
+          marginBottom: '16px',
+          padding: '14px',
+          background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryMuted} 100%)`,
+          borderRadius: '12px',
         }}>
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}>
-            <span style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              color: colors.success,
-              fontSize: '13px',
-              fontWeight: 600,
-            }}>
-              <span style={{
-                width: '12px',
-                height: '12px',
-                borderRadius: '50%',
-                background: colors.success,
-                boxShadow: `0 0 8px ${colors.success}`,
-              }} />
-              With {companyName}
-            </span>
-            <span style={{ fontWeight: 700, color: colors.success, fontSize: '16px' }}>
-              {formatCurrency(withSwipe?.value || 0)}
-            </span>
+          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginBottom: '4px' }}>
+            Total With {companyName}
+          </div>
+          <div style={{ fontWeight: 800, color: colors.white, fontSize: '24px' }}>
+            {formatCurrency(totalValue)}
           </div>
         </div>
 
-        {/* Without SwipeSwipe */}
-        <div style={{
-          marginBottom: '12px',
-          padding: '10px 12px',
-          background: colors.primaryLight,
-          borderRadius: '8px',
-        }}>
+        {/* Breakdown */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {/* Base Investment */}
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            padding: '10px 12px',
+            background: colors.primaryLight,
+            borderRadius: '8px',
           }}>
             <span style={{
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              color: colors.textSecondary,
+              color: colors.primary,
               fontSize: '13px',
+              fontWeight: 500,
             }}>
               <span style={{
                 width: '12px',
                 height: '12px',
-                borderRadius: '50%',
+                borderRadius: '3px',
                 background: colors.primary,
-                opacity: 0.5,
               }} />
-              Without {companyName}
+              Your Investment
             </span>
-            <span style={{ fontWeight: 600, color: colors.textSecondary }}>
-              {formatCurrency(withoutSwipe?.value || 0)}
+            <span style={{ fontWeight: 700, color: colors.primary, fontSize: '14px' }}>
+              {formatCurrency(baseValue)}
             </span>
           </div>
-        </div>
 
-        {/* SwipeSwipe Bonus */}
-        {contribution > 0 && (
-          <div style={{
-            marginTop: '12px',
-            paddingTop: '12px',
-            borderTop: `2px dashed ${colors.accent}`,
-          }}>
+          {/* SwipeSwipe Contribution - Golden Yellow highlight */}
+          {contributionValue > 0 && (
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              background: `linear-gradient(135deg, ${colors.accent} 0%, ${colors.accentDark} 100%)`,
-              padding: '12px 14px',
-              borderRadius: '10px',
+              padding: '10px 12px',
+              background: `linear-gradient(135deg, ${colors.accent}30 0%, ${colors.accentLight} 100%)`,
+              borderRadius: '8px',
+              border: `2px solid ${colors.accent}`,
             }}>
-              <span style={{ fontSize: '13px', color: colors.primary, fontWeight: 600 }}>
-                {companyName} Bonus
-              </span>
               <span style={{
-                fontWeight: 800,
-                color: colors.primary,
-                fontSize: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                color: colors.accentDark,
+                fontSize: '13px',
+                fontWeight: 600,
               }}>
-                +{formatCurrency(contribution)}
+                <span style={{
+                  width: '12px',
+                  height: '12px',
+                  borderRadius: '3px',
+                  background: colors.accent,
+                }} />
+                {companyName} Adds
+              </span>
+              <span style={{ fontWeight: 800, color: colors.accentDark, fontSize: '14px' }}>
+                +{formatCurrency(contributionValue)}
               </span>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     );
   }
   return null;
 };
 
-// Custom legend component with enhanced styling
-const CustomLegend: React.FC<{ companyName: string; contribution30yr: number }> = ({ companyName, contribution30yr }) => (
+// Custom legend component - redesigned for stacked chart
+const CustomLegend: React.FC<{ companyName: string; totalContribution: number }> = ({ companyName, totalContribution }) => (
   <div style={{
     display: 'flex',
     flexDirection: 'column',
     gap: '16px',
     marginTop: '20px',
   }}>
-    {/* Legend items */}
+    {/* Legend items - matching the stacked areas */}
     <div style={{
       display: 'flex',
       justifyContent: 'center',
       gap: '32px',
       flexWrap: 'wrap',
     }}>
+      {/* Your Investment - Deep Blue */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         <div style={{
-          width: '24px',
-          height: '4px',
-          background: `linear-gradient(90deg, ${colors.success} 0%, ${colors.swipeSwipeGradientEnd} 100%)`,
-          borderRadius: '2px',
-          boxShadow: `0 0 8px ${colors.success}`,
+          width: '20px',
+          height: '12px',
+          background: colors.primary,
+          borderRadius: '3px',
         }} />
         <span style={{ fontSize: '14px', color: colors.textPrimary, fontWeight: 600 }}>
-          With {companyName}
+          Your Investment
         </span>
       </div>
+
+      {/* SwipeSwipe Adds - Golden Yellow */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         <div style={{
-          width: '24px',
-          height: '4px',
-          background: colors.primary,
-          borderRadius: '2px',
-          opacity: 0.4,
+          width: '20px',
+          height: '12px',
+          background: colors.accent,
+          borderRadius: '3px',
         }} />
-        <span style={{ fontSize: '14px', color: colors.textSecondary }}>
-          Without {companyName}
+        <span style={{ fontSize: '14px', color: colors.accentDark, fontWeight: 600 }}>
+          {companyName} Adds
         </span>
       </div>
     </div>
 
-    {/* SwipeSwipe Impact Highlight */}
+    {/* SwipeSwipe Impact Highlight Box - Golden Yellow theme */}
     <div style={{
-      background: `linear-gradient(135deg, ${colors.accent}20 0%, ${colors.accent}10 100%)`,
+      background: `linear-gradient(135deg, ${colors.accent}25 0%, ${colors.accentLight} 100%)`,
       border: `2px solid ${colors.accent}`,
       borderRadius: '12px',
       padding: '16px 20px',
@@ -229,9 +218,7 @@ const CustomLegend: React.FC<{ companyName: string; contribution30yr: number }> 
       justifyContent: 'center',
       gap: '12px',
     }}>
-      <span style={{
-        fontSize: '24px',
-      }}>💰</span>
+      <span style={{ fontSize: '28px' }}>💰</span>
       <div>
         <span style={{
           fontSize: '14px',
@@ -242,16 +229,16 @@ const CustomLegend: React.FC<{ companyName: string; contribution30yr: number }> 
           {companyName} adds
         </span>
         <span style={{
-          fontSize: '20px',
-          fontWeight: 700,
+          fontSize: '24px',
+          fontWeight: 800,
           color: colors.primary,
         }}>
-          +{formatCurrency(contribution30yr)}
+          +{formatCurrency(totalContribution)}
         </span>
         <span style={{
-          fontSize: '13px',
+          fontSize: '14px',
           color: colors.textSecondary,
-          marginLeft: '6px',
+          marginLeft: '8px',
         }}>
           to your wealth
         </span>
@@ -266,23 +253,44 @@ export const WealthChart: React.FC<WealthChartProps> = ({
   animationDuration = 1500,
   userAge,
 }) => {
-  // Prepare chart data with age labels if available
-  const years = [5, 10, 15, 20, 25, 30, 35];
-  const chartData = years.map(year => ({
-    year,
-    displayLabel: userAge ? `Age ${userAge + year}` : `${year}yr`,
-    withSwipeSwipe: projection.withSwipeSwipe[year],
-    withoutSwipeSwipe: projection.withoutSwipeSwipe[year],
-    contribution: projection.swipeswipeContribution[year],
-  }));
+  // Calculate years to show until age 90
+  const LIFE_EXPECTANCY = 90;
+  const yearsUntil90 = userAge ? LIFE_EXPECTANCY - userAge : 35;
 
-  // Calculate the difference area (the visual gap between the two lines)
-  const maxWithSwipe = Math.max(...years.map(y => projection.withSwipeSwipe[y]));
+  // Generate dynamic years array based on user's age to reach age 90
+  const allMilestoneYears = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
+  const years = allMilestoneYears.filter(y => y <= yearsUntil90);
+
+  // Prepare chart data for STACKED area chart
+  // base = withoutSwipeSwipe (the foundation)
+  // swipeswipeContribution = the extra amount (stacked on top)
+  const chartData = years.map(year => {
+    const baseValue = year === 0
+      ? (projection.withoutSwipeSwipe[0] ?? projection.withoutSwipeSwipe[5] ?? 0)
+      : (projection.withoutSwipeSwipe[year] || 0);
+
+    const contributionValue = year === 0
+      ? 0
+      : (projection.swipeswipeContribution[year] || 0);
+
+    return {
+      year,
+      base: baseValue,
+      swipeswipeContribution: contributionValue,
+      // Keep these for reference
+      withSwipeSwipe: baseValue + contributionValue,
+      withoutSwipeSwipe: baseValue,
+    };
+  });
+
+  // Calculate metrics
+  const maxWithSwipe = Math.max(...chartData.map(d => d.withSwipeSwipe));
   const isMillionaire = maxWithSwipe >= 1000000;
-  const millionaireYear = years.find(y => projection.withSwipeSwipe[y] >= 1000000);
+  const millionaireYear = chartData.find(d => d.withSwipeSwipe >= 1000000)?.year;
 
-  // 30-year contribution for the legend
-  const contribution30yr = projection.swipeswipeContribution[30];
+  // Get the final year's contribution for the legend
+  const finalYear = years[years.length - 1] || 35;
+  const finalContribution = projection.swipeswipeContribution[finalYear] || 0;
 
   return (
     <div className="projection-chart-container" style={{
@@ -338,16 +346,16 @@ export const WealthChart: React.FC<WealthChartProps> = ({
             alignItems: 'center',
             gap: '4px',
           }}>
-            <span style={{ color: colors.success }}>●</span>
+            <span style={{ color: colors.primary }}>●</span>
             11% Pre-Retirement
           </div>
           <div style={{
-            background: colors.successLight,
+            background: colors.accentLight,
             padding: '6px 12px',
             borderRadius: '16px',
             fontSize: '12px',
             fontWeight: 600,
-            color: colors.success,
+            color: colors.accentDark,
             display: 'flex',
             alignItems: 'center',
             gap: '4px',
@@ -358,34 +366,27 @@ export const WealthChart: React.FC<WealthChartProps> = ({
         </div>
       </div>
 
-      {/* Main Chart - Larger height for better visibility */}
+      {/* Main Chart - Stacked Area Chart */}
       <ResponsiveContainer width="100%" height={450}>
         <AreaChart
           data={chartData}
           margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+          stackOffset="none"
         >
           <defs>
-            {/* Enhanced gradient for With SwipeSwipe - More visible fill */}
-            <linearGradient id="colorWithSwipe" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={colors.success} stopOpacity={0.6} />
-              <stop offset="40%" stopColor={colors.success} stopOpacity={0.4} />
-              <stop offset="70%" stopColor={colors.success} stopOpacity={0.2} />
-              <stop offset="100%" stopColor={colors.success} stopOpacity={0.05} />
+            {/* Gradient for base investment - Deep Blue */}
+            <linearGradient id="colorBase" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={colors.primary} stopOpacity={0.9} />
+              <stop offset="50%" stopColor={colors.primary} stopOpacity={0.7} />
+              <stop offset="100%" stopColor={colors.primary} stopOpacity={0.5} />
             </linearGradient>
-            {/* Gradient for Without SwipeSwipe - Slightly more visible */}
-            <linearGradient id="colorWithoutSwipe" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={colors.primary} stopOpacity={0.25} />
-              <stop offset="50%" stopColor={colors.primary} stopOpacity={0.12} />
-              <stop offset="100%" stopColor={colors.primary} stopOpacity={0.03} />
+
+            {/* Gradient for SwipeSwipe contribution - Golden Yellow (THE HIGHLIGHT) */}
+            <linearGradient id="colorContribution" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={colors.accent} stopOpacity={1} />
+              <stop offset="50%" stopColor={colors.accent} stopOpacity={0.9} />
+              <stop offset="100%" stopColor={colors.accentDark} stopOpacity={0.8} />
             </linearGradient>
-            {/* Glow effect for the main line */}
-            <filter id="glowEffect" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-              <feMerge>
-                <feMergeNode in="coloredBlur"/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
           </defs>
 
           <CartesianGrid
@@ -415,31 +416,30 @@ export const WealthChart: React.FC<WealthChartProps> = ({
             width={70}
           />
 
-          <Tooltip content={<CustomTooltip companyName={companyName} />} />
+          <Tooltip content={<CustomTooltip companyName={companyName} userAge={userAge} />} />
 
-          {/* Without SwipeSwipe area - rendered first (behind) */}
+          {/* Base Investment Area - Deep Blue (bottom of stack) */}
           <Area
             type="monotone"
-            dataKey="withoutSwipeSwipe"
+            dataKey="base"
+            stackId="1"
             stroke={colors.primary}
             strokeWidth={2}
-            strokeDasharray="6 6"
-            strokeOpacity={0.4}
-            fill="url(#colorWithoutSwipe)"
+            fill="url(#colorBase)"
             animationDuration={animationDuration}
             animationEasing="ease-out"
           />
 
-          {/* With SwipeSwipe area - rendered second (in front) */}
+          {/* SwipeSwipe Contribution Area - Golden Yellow (stacked on top) */}
           <Area
             type="monotone"
-            dataKey="withSwipeSwipe"
-            stroke={colors.success}
-            strokeWidth={4}
-            fill="url(#colorWithSwipe)"
+            dataKey="swipeswipeContribution"
+            stackId="1"
+            stroke={colors.accentDark}
+            strokeWidth={3}
+            fill="url(#colorContribution)"
             animationDuration={animationDuration}
             animationEasing="ease-out"
-            filter="url(#glowEffect)"
           />
 
           {/* Millionaire reference line */}
@@ -462,16 +462,16 @@ export const WealthChart: React.FC<WealthChartProps> = ({
       </ResponsiveContainer>
 
       {/* Custom Legend with SwipeSwipe Impact */}
-      <CustomLegend companyName={companyName} contribution30yr={contribution30yr} />
+      <CustomLegend companyName={companyName} totalContribution={finalContribution} />
 
-      {/* Key Insight Box */}
+      {/* Key Insight Box - Light blue theme to differentiate from yellow SwipeSwipe box */}
       <div style={{
         marginTop: '20px',
         padding: '18px 20px',
-        background: `linear-gradient(135deg, ${colors.successLight} 0%, ${colors.white} 100%)`,
+        background: `linear-gradient(135deg, ${colors.primaryLight} 0%, ${colors.white} 100%)`,
         borderRadius: '14px',
-        borderLeft: `5px solid ${colors.success}`,
-        boxShadow: `0 4px 16px ${colors.success}20`,
+        borderLeft: `5px solid ${colors.primary}`,
+        boxShadow: '0 4px 16px rgba(41, 58, 96, 0.1)',
       }}>
         <p style={{
           margin: 0,
@@ -479,14 +479,14 @@ export const WealthChart: React.FC<WealthChartProps> = ({
           color: colors.textPrimary,
           lineHeight: 1.7,
         }}>
-          <strong style={{ color: colors.success }}>Key Insight:</strong> Using {companyName} to control spending adds{' '}
+          <strong style={{ color: colors.primary }}>Key Insight:</strong> Saving effortlessly with {companyName} while you shop puts an extra{' '}
           <strong style={{
-            color: colors.success,
+            color: colors.primary,
             fontSize: '17px',
           }}>
-            {formatCurrency(contribution30yr)}
+            {formatCurrency(finalContribution)}
           </strong>{' '}
-          to your 30-year wealth through the power of compound interest!
+          into your bank account to be invested to increase growth.
           {isMillionaire && millionaireYear && (
             <span style={{
               display: 'block',

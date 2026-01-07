@@ -15,8 +15,9 @@ const DISCOVERY_DOCS = [
 ];
 
 // SwipeSwipe Links
-const SWIPESWIPE_WEBSITE = 'swipeswipe.co';
-const CHROME_EXTENSION_LINK = 'https://chromewebstore.google.com/detail/swipeswipe/jmephhldhjnmcmmnmgoiibamhgeoolbl?utm_source=ext_app_menu';
+const SWIPESWIPE_WEBSITE = 'https://swipeswipe.co/';
+const SWIPESWIPE_WEBSITE_DISPLAY = 'swipeswipe.co';
+const CHROME_EXTENSION_LINK = 'https://chromewebstore.google.com/detail/swipeswipe/jmephhldhjnmcmmnmgoiibamhgeoolbl?utm_source=ext_app_menu&pli=1';
 
 // Return rate constants
 const PRE_RETIREMENT_RETURN_RATE = 11;
@@ -132,21 +133,24 @@ export async function createWealthProjectionDoc(
     day: 'numeric',
   });
 
-  // Calculate projection values
+  // Calculate projection values - always project until age 90
   const LIFE_EXPECTANCY = 90;
-  const yearsToShow = Math.min(45, Math.max(5, LIFE_EXPECTANCY - userData.age));
-  const milestoneYear = [5, 10, 15, 20, 25, 30, 35].reduce((prev, curr) =>
-    Math.abs(curr - yearsToShow) < Math.abs(prev - yearsToShow) ? curr : prev
+  const yearsToAge90 = Math.max(5, LIFE_EXPECTANCY - userData.age);
+  // Use extended milestone years and find the closest one to reach age 90
+  const allMilestoneYears = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
+  const availableMilestones = allMilestoneYears.filter(y =>
+    y <= yearsToAge90 && projection.withSwipeSwipe[y] !== undefined
   );
+  const milestoneYear = availableMilestones[availableMilestones.length - 1] || 35;
 
   const finalWealth = projection.withSwipeSwipe[milestoneYear];
   const swipeContribution = projection.swipeswipeContribution[milestoneYear];
   const wealthWithoutSS = projection.withoutSwipeSwipe[milestoneYear];
   const finalAge = userData.age + milestoneYear;
 
-  // Create document
+  // Create document with new title
   const createResponse = await window.gapi.client.docs.documents.create({
-    title: `${companyName} Wealth Projection - ${today}`,
+    title: `How rich can you get - powered by ${companyName} - ${today}`,
   });
   const documentId = createResponse.result.documentId;
 
@@ -184,27 +188,47 @@ export async function createWealthProjectionDoc(
   };
 
   // ══════════════════════════════════════════════════════════════════════════
-  // HEADER: "SwipeSwipe Wealth Projection" + "swipeswipe.co"
+  // HEADER: "How rich can you get" + "powered by SwipeSwipe"
   // ══════════════════════════════════════════════════════════════════════════
 
-  const h1 = addText(`${companyName} `);
+  const h1 = addText('How rich can you get ');
   fmt(h1.start, h1.end, {
     bold: true,
     fontSize: { magnitude: 24, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.primary } },
   });
 
-  const h2 = addText('Wealth Projection');
-  fmt(h2.start, h2.end, {
-    fontSize: { magnitude: 24, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.primary } },
+  const h2 = addText(`powered by ${companyName}\n`);
+  fmt(h2.start, h2.end - 1, {
+    fontSize: { magnitude: 18, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.success } },
   });
 
-  // Website on the right (using tabs for spacing)
-  const web = addText(`\t\t\t\t\t${SWIPESWIPE_WEBSITE}\n`);
-  fmt(web.start + 5, web.end - 1, {
-    fontSize: { magnitude: 11, unit: 'PT' },
+  // Clickable links row - Website and Extension
+  const websiteLbl = addText('🌐 Website: ');
+  fmt(websiteLbl.start, websiteLbl.end, {
+    fontSize: { magnitude: 10, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
+  });
+
+  const websiteLink = addText(`${SWIPESWIPE_WEBSITE_DISPLAY}`);
+  fmt(websiteLink.start, websiteLink.end, {
+    fontSize: { magnitude: 10, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.success } },
+    link: { url: SWIPESWIPE_WEBSITE },
+  });
+
+  const extLbl = addText('    |    🧩 Chrome Extension: ');
+  fmt(extLbl.start, extLbl.end, {
+    fontSize: { magnitude: 10, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
+  });
+
+  const extLink = addText('Install Now\n');
+  fmt(extLink.start, extLink.end - 1, {
+    fontSize: { magnitude: 10, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.success } },
+    link: { url: CHROME_EXTENSION_LINK },
   });
 
   // Tagline
@@ -415,12 +439,17 @@ export async function createWealthProjectionDoc(
     foregroundColor: { color: { rgbColor: COLORS.lightGray } },
   });
 
-  // Data rows
-  const years = [5, 10, 15, 20, 25, 30, 35];
-  years.forEach((year) => {
-    const withoutSS = formatCurrency(projection.withoutSwipeSwipe[year]);
-    const withSS = formatCurrency(projection.withSwipeSwipe[year]);
-    const bonus = `+${formatCurrency(projection.swipeswipeContribution[year])}`;
+  // Data rows - show all available milestone years until age 90
+  availableMilestones.forEach((year) => {
+    const withoutSSValue = projection.withoutSwipeSwipe[year];
+    const withSSValue = projection.withSwipeSwipe[year];
+    const bonusValue = projection.swipeswipeContribution[year];
+
+    if (withSSValue === undefined) return;
+
+    const withoutSS = formatCurrency(withoutSSValue);
+    const withSS = formatCurrency(withSSValue);
+    const bonus = `+${formatCurrency(bonusValue)}`;
 
     const rowYear = addText(`Year ${year}\t\t`);
     fmt(rowYear.start, rowYear.end, {
@@ -465,7 +494,7 @@ export async function createWealthProjectionDoc(
   const insights = [
     'Small savings can grow into significant wealth',
     'Consistency matters more than timing the market',
-    `${companyName} helps reduce impulsive spending`,
+    `${companyName} automatically puts money in your bank account while you shop`,
   ];
 
   insights.forEach(insight => {
