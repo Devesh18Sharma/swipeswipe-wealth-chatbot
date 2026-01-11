@@ -197,7 +197,7 @@ export const HeroWealthDisplay: React.FC<HeroWealthDisplayProps> = ({
               fontWeight: 600,
               color: colors.primary,
             }}>
-              from SwipeSwipe
+              Added By SwipeSwipe
             </span>
           </motion.div>
         )}

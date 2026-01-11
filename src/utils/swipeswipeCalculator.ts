@@ -35,5 +35,5 @@ export function calculateSwipeSwipeSavings(annualIncome: number): number {
  */
 export function getSwipeSwipeSavingsExplanation(annualIncome: number): string {
   const savings = calculateSwipeSwipeSavings(annualIncome);
-  return `Based on your income level, SwipeSwipe users typically save an additional $${savings}/month by controlling impulse purchases.`;
+  return `Based on your income level, SwipeSwipe users typically save an additional $${savings}/month.`;
 }

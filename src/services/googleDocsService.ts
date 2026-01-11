@@ -208,29 +208,33 @@ export async function createWealthProjectionDoc(
     foregroundColor: { color: { rgbColor: COLORS.success } },
   });
 
-  // Clickable links row - Website and Extension
+  // Clickable links row - Website and Extension (HIGHLIGHTED)
   const websiteLbl = addText('🌐 Website: ');
   fmt(websiteLbl.start, websiteLbl.end, {
-    fontSize: { magnitude: 10, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
+    bold: true,
+    fontSize: { magnitude: 11, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.primary } },
   });
 
   const websiteLink = addText(`${SWIPESWIPE_WEBSITE_DISPLAY}`);
   fmt(websiteLink.start, websiteLink.end, {
-    fontSize: { magnitude: 10, unit: 'PT' },
+    bold: true,
+    fontSize: { magnitude: 11, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.success } },
     link: { url: SWIPESWIPE_WEBSITE },
   });
 
   const extLbl = addText('    |    🧩 Chrome Extension: ');
   fmt(extLbl.start, extLbl.end, {
-    fontSize: { magnitude: 10, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
+    bold: true,
+    fontSize: { magnitude: 11, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.primary } },
   });
 
   const extLink = addText('Install Now\n');
   fmt(extLink.start, extLink.end - 1, {
-    fontSize: { magnitude: 10, unit: 'PT' },
+    bold: true,
+    fontSize: { magnitude: 11, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.success } },
     link: { url: CHROME_EXTENSION_LINK },
   });
@@ -247,7 +251,7 @@ export async function createWealthProjectionDoc(
   // PERSONALIZED WEALTH PROJECTION CARD
   // ══════════════════════════════════════════════════════════════════════════
 
-  const pwp = addText('Personalized Wealth Projection\n');
+  const pwp = addText('Personalized Wealth Simulation\n');
   fmt(pwp.start, pwp.end - 1, {
     bold: true,
     fontSize: { magnitude: 13, unit: 'PT' },
@@ -269,13 +273,6 @@ export async function createWealthProjectionDoc(
   // ══════════════════════════════════════════════════════════════════════════
   // HERO SECTION - Green Banner with Net Worth
   // ══════════════════════════════════════════════════════════════════════════
-
-  // Top green border
-  const greenTop = addText('█████████████████████████████████████████████████████████████████████\n');
-  fmt(greenTop.start, greenTop.end - 1, {
-    foregroundColor: { color: { rgbColor: COLORS.success } },
-    fontSize: { magnitude: 4, unit: 'PT' },
-  });
 
   // Hero label
   const heroLbl = addText(`Estimated Net Worth at Age ${finalAge}\n`);
@@ -303,12 +300,7 @@ export async function createWealthProjectionDoc(
   });
   para(heroSub.start, heroSub.end, { alignment: 'CENTER', spaceBelow: { magnitude: 8, unit: 'PT' } });
 
-  // Bottom green border
-  const greenBot = addText('█████████████████████████████████████████████████████████████████████\n\n');
-  fmt(greenBot.start, greenBot.end - 2, {
-    foregroundColor: { color: { rgbColor: COLORS.success } },
-    fontSize: { magnitude: 4, unit: 'PT' },
-  });
+  addText('\n');
 
   // ══════════════════════════════════════════════════════════════════════════
   // THE SWIPESWIPE DIFFERENCE
@@ -421,6 +413,12 @@ export async function createWealthProjectionDoc(
   // MONTHLY CONTRIBUTIONS TABLE
   // ══════════════════════════════════════════════════════════════════════════
 
+  // Page break to keep table on one page
+  requests.push({
+    insertPageBreak: { location: { index: idx } },
+  });
+  idx += 1;
+
   const tblHdr = addText('Monthly Contributions\n\n');
   fmt(tblHdr.start, tblHdr.end - 2, {
     bold: true,
@@ -434,13 +432,6 @@ export async function createWealthProjectionDoc(
     bold: true,
     fontSize: { magnitude: 10, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
-  });
-
-  // Separator
-  const sep = addText('─────────────────────────────────────────────────────────────────────\n');
-  fmt(sep.start, sep.end - 1, {
-    fontSize: { magnitude: 8, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.lightGray } },
   });
 
   // Data rows - show all available milestone years until age 90
