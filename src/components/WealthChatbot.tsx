@@ -199,7 +199,7 @@ const WealthChatbot: React.FC<WealthChatbotProps> = ({
 
   const getStagePrompt = useCallback((stage: ConversationState['stage']): string => {
     const prompts: Record<ConversationState['stage'], string> = {
-      greeting: `Welcome to ${companyName}'s Wealth Planning Assistant! 🚀\n\nI'm here to show you how wealthy you could become through consistent saving and investing.\n\nTo get started, what's your current age?`,
+      greeting: `Welcome to ${companyName}'s Wealth Simulator! 🚀\n\nI'm here to show you how wealthy you could become.\n\nTo get started, what's your current age?`,
 
       age: "What's your current age?",
 

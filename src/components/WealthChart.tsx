@@ -16,7 +16,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  ReferenceLine,
 } from 'recharts';
 import { WealthProjection } from '../types';
 import { formatCurrency } from '../utils/calculations';
@@ -38,6 +37,8 @@ const colors = {
   accentLight: '#FEF3D9',      // Light golden for backgrounds
   success: '#19B600',
   successLight: '#D4FACE',
+  successDark: '#0D7A00',      // Dark green for post-retirement badge
+  successLightBg: '#E8F5E3',   // Very light green for pre-retirement badge
   textPrimary: '#293A60',
   textSecondary: '#879CA8',
   bgSecondary: '#FAFAFA',
@@ -341,31 +342,31 @@ export const WealthChart: React.FC<WealthChartProps> = ({
           flexWrap: 'wrap',
         }}>
           <div style={{
-            background: colors.primaryLight,
+            background: colors.successLightBg,
             padding: '6px 12px',
             borderRadius: '16px',
             fontSize: '12px',
             fontWeight: 600,
-            color: colors.primary,
+            color: colors.success,
             display: 'flex',
             alignItems: 'center',
             gap: '4px',
           }}>
-            <span style={{ color: colors.primary }}>●</span>
+            <span style={{ color: colors.success }}>●</span>
             11% Pre-Retirement
           </div>
           <div style={{
-            background: colors.accentLight,
+            background: colors.successLight,
             padding: '6px 12px',
             borderRadius: '16px',
             fontSize: '12px',
             fontWeight: 600,
-            color: colors.accentDark,
+            color: colors.successDark,
             display: 'flex',
             alignItems: 'center',
             gap: '4px',
           }}>
-            <span style={{ color: colors.accent }}>●</span>
+            <span style={{ color: colors.successDark }}>●</span>
             6% Post-Retirement
           </div>
         </div>
@@ -446,23 +447,6 @@ export const WealthChart: React.FC<WealthChartProps> = ({
             animationDuration={animationDuration}
             animationEasing="ease-out"
           />
-
-          {/* Millionaire reference line */}
-          {isMillionaire && (
-            <ReferenceLine
-              y={1000000}
-              stroke={colors.accent}
-              strokeDasharray="8 4"
-              strokeWidth={2}
-              label={{
-                value: '🎉 Millionaire!',
-                fill: colors.primary,
-                fontSize: 13,
-                fontWeight: 700,
-                position: 'right',
-              }}
-            />
-          )}
         </AreaChart>
       </ResponsiveContainer>
 
