@@ -150,7 +150,6 @@ export async function createWealthProjectionDoc(
   const finalWealth = projection.withSwipeSwipe[milestoneYear];
   const swipeContribution = projection.swipeswipeContribution[milestoneYear];
   const wealthWithoutSS = projection.withoutSwipeSwipe[milestoneYear];
-  const finalAge = userData.age + milestoneYear;
 
   // Create document with new title
   const createResponse = await window.gapi.client.docs.documents.create({
@@ -202,50 +201,51 @@ export async function createWealthProjectionDoc(
     foregroundColor: { color: { rgbColor: COLORS.primary } },
   });
 
-  const h2 = addText(`powered by ${companyName}\n`);
-  fmt(h2.start, h2.end - 1, {
+  const h2 = addText(`powered by ${companyName}\n\n`);
+  fmt(h2.start, h2.end - 2, {
     fontSize: { magnitude: 18, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.success } },
   });
 
-  // Clickable links row - Website and Extension (HIGHLIGHTED)
+  // Clickable links row - Website and Extension (14 PT - readable without wrapping)
   const websiteLbl = addText('🌐 Website: ');
   fmt(websiteLbl.start, websiteLbl.end, {
     bold: true,
-    fontSize: { magnitude: 11, unit: 'PT' },
+    fontSize: { magnitude: 14, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.primary } },
   });
 
   const websiteLink = addText(`${SWIPESWIPE_WEBSITE_DISPLAY}`);
   fmt(websiteLink.start, websiteLink.end, {
     bold: true,
-    fontSize: { magnitude: 11, unit: 'PT' },
+    fontSize: { magnitude: 14, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.success } },
     link: { url: SWIPESWIPE_WEBSITE },
   });
 
-  const extLbl = addText('    |    🧩 Chrome Extension: ');
+  const extLbl = addText('  |  🧩 Chrome Extension: ');
   fmt(extLbl.start, extLbl.end, {
     bold: true,
-    fontSize: { magnitude: 11, unit: 'PT' },
+    fontSize: { magnitude: 14, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.primary } },
   });
 
   const extLink = addText('Install Now\n');
   fmt(extLink.start, extLink.end - 1, {
     bold: true,
-    fontSize: { magnitude: 11, unit: 'PT' },
+    fontSize: { magnitude: 14, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.success } },
     link: { url: CHROME_EXTENSION_LINK },
   });
 
   // Tagline
-  const tag = addText('A simple, realistic view of what consistency can build.\n\n');
-  fmt(tag.start, tag.end - 2, {
+  const tag = addText('A simple, realistic view of what consistency can build.\n');
+  fmt(tag.start, tag.end - 1, {
     fontSize: { magnitude: 11, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
     italic: true,
   });
+  para(tag.start, tag.end, { spaceBelow: { magnitude: 12, unit: 'PT' } });
 
   // ══════════════════════════════════════════════════════════════════════════
   // PERSONALIZED WEALTH PROJECTION CARD
@@ -264,23 +264,16 @@ export async function createWealthProjectionDoc(
     foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
   });
 
-  const forYou = addText('For: You\n\n');
-  fmt(forYou.start, forYou.end - 2, {
+  const forYou = addText('For: You\n');
+  fmt(forYou.start, forYou.end - 1, {
     fontSize: { magnitude: 10, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
   });
+  para(forYou.start, forYou.end, { spaceBelow: { magnitude: 8, unit: 'PT' } });
 
   // ══════════════════════════════════════════════════════════════════════════
   // HERO SECTION - Green Banner with Net Worth
   // ══════════════════════════════════════════════════════════════════════════
-
-  // Hero label
-  const heroLbl = addText(`Estimated Net Worth at Age ${finalAge}\n`);
-  fmt(heroLbl.start, heroLbl.end - 1, {
-    fontSize: { magnitude: 13, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: { red: 0.18, green: 0.45, blue: 0.22 } } },
-  });
-  para(heroLbl.start, heroLbl.end, { alignment: 'CENTER', spaceAbove: { magnitude: 8, unit: 'PT' } });
 
   // BIG WEALTH NUMBER
   const bigNum = addText(`${formatCurrency(finalWealth)}\n`);
@@ -289,7 +282,7 @@ export async function createWealthProjectionDoc(
     fontSize: { magnitude: 48, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.primary } },
   });
-  para(bigNum.start, bigNum.end, { alignment: 'CENTER' });
+  para(bigNum.start, bigNum.end, { alignment: 'CENTER', spaceAbove: { magnitude: 12, unit: 'PT' } });
 
   // Subtitle
   const heroSub = addText('You are on a path to financial independence.\n');
@@ -298,16 +291,14 @@ export async function createWealthProjectionDoc(
     foregroundColor: { color: { rgbColor: { red: 0.18, green: 0.45, blue: 0.22 } } },
     italic: true,
   });
-  para(heroSub.start, heroSub.end, { alignment: 'CENTER', spaceBelow: { magnitude: 8, unit: 'PT' } });
-
-  addText('\n');
+  para(heroSub.start, heroSub.end, { alignment: 'CENTER', spaceBelow: { magnitude: 12, unit: 'PT' } });
 
   // ══════════════════════════════════════════════════════════════════════════
   // THE SWIPESWIPE DIFFERENCE
   // ══════════════════════════════════════════════════════════════════════════
 
-  const diffHdr = addText(`The ${companyName} Difference\n\n`);
-  fmt(diffHdr.start, diffHdr.end - 2, {
+  const diffHdr = addText(`The ${companyName} Difference\n`);
+  fmt(diffHdr.start, diffHdr.end - 1, {
     bold: true,
     fontSize: { magnitude: 13, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.primary } },
@@ -350,8 +341,8 @@ export async function createWealthProjectionDoc(
 
   addText('\t\t\t\t\t\t');
 
-  const val2 = addText(`${formatCurrency(finalWealth)}\n\n`);
-  fmt(val2.start, val2.end - 2, {
+  const val2 = addText(`${formatCurrency(finalWealth)}\n`);
+  fmt(val2.start, val2.end - 1, {
     bold: true,
     fontSize: { magnitude: 20, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.success } },
@@ -373,20 +364,20 @@ export async function createWealthProjectionDoc(
   });
   para(impVal.start, impVal.end, { alignment: 'CENTER' });
 
-  const impNote = addText('The long term value of controlling impulse spending.\n\n');
-  fmt(impNote.start, impNote.end - 2, {
+  const impNote = addText('The long term value of controlling impulse spending.\n');
+  fmt(impNote.start, impNote.end - 1, {
     fontSize: { magnitude: 10, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
     italic: true,
   });
-  para(impNote.start, impNote.end, { alignment: 'CENTER', spaceBelow: { magnitude: 12, unit: 'PT' } });
+  para(impNote.start, impNote.end, { alignment: 'CENTER', spaceBelow: { magnitude: 16, unit: 'PT' } });
 
   // ══════════════════════════════════════════════════════════════════════════
   // YOUR STARTING PROFILE
   // ══════════════════════════════════════════════════════════════════════════
 
-  const profHdr = addText('Your Starting Profile\n\n');
-  fmt(profHdr.start, profHdr.end - 2, {
+  const profHdr = addText('Your Starting Profile\n');
+  fmt(profHdr.start, profHdr.end - 1, {
     bold: true,
     fontSize: { magnitude: 13, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.primary } },
@@ -401,90 +392,115 @@ export async function createWealthProjectionDoc(
   para(profLbls.start, profLbls.end, { alignment: 'CENTER' });
 
   // Values row
-  const profVals = addText(`${userData.age}\t\t\t\t${formatCurrency(userData.annualIncome)}\t\t\t\t${formatCurrency(userData.currentSavings)}\n\n`);
-  fmt(profVals.start, profVals.end - 2, {
+  const profVals = addText(`${userData.age}\t\t\t\t${formatCurrency(userData.annualIncome)}\t\t\t\t${formatCurrency(userData.currentSavings)}\n`);
+  fmt(profVals.start, profVals.end - 1, {
     bold: true,
     fontSize: { magnitude: 16, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.primary } },
   });
-  para(profVals.start, profVals.end, { alignment: 'CENTER' });
+  para(profVals.start, profVals.end, { alignment: 'CENTER', spaceBelow: { magnitude: 12, unit: 'PT' } });
 
   // ══════════════════════════════════════════════════════════════════════════
-  // MONTHLY CONTRIBUTIONS TABLE
+  // WEALTH GROWTH TABLE (Clean, professional format - fits one page)
   // ══════════════════════════════════════════════════════════════════════════
 
-  // Page break to keep table on one page
-  requests.push({
-    insertPageBreak: { location: { index: idx } },
-  });
-  idx += 1;
-
-  const tblHdr = addText('Monthly Contributions\n\n');
-  fmt(tblHdr.start, tblHdr.end - 2, {
+  const tblHdr = addText('\nYour Wealth Growth Journey\n\n');
+  fmt(tblHdr.start + 1, tblHdr.end - 2, {
     bold: true,
-    fontSize: { magnitude: 13, unit: 'PT' },
+    fontSize: { magnitude: 16, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.primary } },
   });
 
-  // Table header row
-  const colHdr = addText(`Year\t\tWithout ${companyName}\t\tWith ${companyName}\t\t${companyName} Added Value\n`);
-  fmt(colHdr.start, colHdr.end - 1, {
-    bold: true,
+  // Subtitle explaining the table
+  const tblSubtitle = addText('See how your wealth grows over time with consistent investing:\n\n');
+  fmt(tblSubtitle.start, tblSubtitle.end - 2, {
     fontSize: { magnitude: 10, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
+    italic: true,
   });
 
-  // Data rows - show all available milestone years until age 90
-  availableMilestones.forEach((year) => {
-    const withoutSSValue = projection.withoutSwipeSwipe[year];
-    const withSSValue = projection.withSwipeSwipe[year];
-    const bonusValue = projection.swipeswipeContribution[year];
+  // Show only KEY milestones to fit on one page (max ~8 rows)
+  const keyMilestones = [5, 10, 20, 30, 40, 50];
+  const finalYear = yearsToAge90;
 
-    if (withSSValue === undefined) return;
+  // Filter to valid milestones that exist in projection
+  let displayMilestones = keyMilestones.filter(year =>
+    year <= finalYear && projection.withSwipeSwipe[year] !== undefined
+  );
 
-    const withoutSS = formatCurrency(withoutSSValue);
-    const withSS = formatCurrency(withSSValue);
-    const bonus = `+${formatCurrency(bonusValue)}`;
+  // Always add the final year if not already included
+  if (finalYear > 0 && !displayMilestones.includes(finalYear) && projection.withSwipeSwipe[finalYear] !== undefined) {
+    displayMilestones.push(finalYear);
+  }
 
-    const rowYear = addText(`Year ${year}\t\t`);
-    fmt(rowYear.start, rowYear.end, {
-      fontSize: { magnitude: 10, unit: 'PT' },
+  // Create clean, readable rows - each row is self-contained
+  displayMilestones.forEach((year, index) => {
+    const withoutSS = formatCurrency(projection.withoutSwipeSwipe[year]);
+    const withSS = formatCurrency(projection.withSwipeSwipe[year]);
+    const bonus = formatCurrency(projection.swipeswipeContribution[year]);
+    const age = userData.age + year;
+
+    // Year/Age label
+    const yearLabel = addText(`Year ${year} (Age ${age})\n`);
+    fmt(yearLabel.start, yearLabel.end - 1, {
+      bold: true,
+      fontSize: { magnitude: 11, unit: 'PT' },
       foregroundColor: { color: { rgbColor: COLORS.primary } },
     });
 
-    const rowWithout = addText(`${withoutSS}\t\t`);
-    fmt(rowWithout.start, rowWithout.end, {
+    // Without SwipeSwipe line
+    const withoutLine = addText(`Without ${companyName}: `);
+    fmt(withoutLine.start, withoutLine.end, {
+      fontSize: { magnitude: 10, unit: 'PT' },
+      foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
+    });
+    const withoutVal = addText(`${withoutSS}\n`);
+    fmt(withoutVal.start, withoutVal.end - 1, {
       fontSize: { magnitude: 10, unit: 'PT' },
       foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
     });
 
-    const rowWith = addText(`${withSS}\t\t`);
-    fmt(rowWith.start, rowWith.end, {
+    // With SwipeSwipe line (highlighted)
+    const withLine = addText(`With ${companyName}: `);
+    fmt(withLine.start, withLine.end, {
       fontSize: { magnitude: 10, unit: 'PT' },
       foregroundColor: { color: { rgbColor: COLORS.success } },
+    });
+    const withVal = addText(`${withSS}`);
+    fmt(withVal.start, withVal.end, {
       bold: true,
+      fontSize: { magnitude: 11, unit: 'PT' },
+      foregroundColor: { color: { rgbColor: COLORS.success } },
     });
 
-    const rowBonus = addText(`${bonus}\n`);
-    fmt(rowBonus.start, rowBonus.end - 1, {
+    // Bonus badge
+    const bonusBadge = addText(` (+${bonus})\n`);
+    fmt(bonusBadge.start, bonusBadge.end - 1, {
       fontSize: { magnitude: 10, unit: 'PT' },
       foregroundColor: { color: { rgbColor: COLORS.success } },
       italic: true,
     });
+
+    // Add spacing between entries (except last)
+    if (index < displayMilestones.length - 1) {
+      addText('\n');
+    }
   });
 
-  addText('\n');
+  // Add spacing after table
+  addText('\n\n');
 
   // ══════════════════════════════════════════════════════════════════════════
   // WHAT THIS MEANS FOR YOU
   // ══════════════════════════════════════════════════════════════════════════
 
-  const meansHdr = addText('What This Means for You\n\n');
-  fmt(meansHdr.start, meansHdr.end - 2, {
+  const meansHdr = addText('What This Means for You\n');
+  fmt(meansHdr.start, meansHdr.end - 1, {
     bold: true,
     fontSize: { magnitude: 13, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.primary } },
   });
+  para(meansHdr.start, meansHdr.end, { spaceAbove: { magnitude: 20, unit: 'PT' } });
 
   const insights = [
     'Small savings can grow into significant wealth',
@@ -505,18 +521,17 @@ export async function createWealthProjectionDoc(
     });
   });
 
-  addText('\n');
-
   // ══════════════════════════════════════════════════════════════════════════
   // AFTER RETIREMENT BOX
   // ══════════════════════════════════════════════════════════════════════════
 
-  const retHdr = addText('After Retirement\n\n');
-  fmt(retHdr.start, retHdr.end - 2, {
+  const retHdr = addText('After Retirement\n');
+  fmt(retHdr.start, retHdr.end - 1, {
     bold: true,
     fontSize: { magnitude: 14, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.primary } },
   });
+  para(retHdr.start, retHdr.end, { spaceAbove: { magnitude: 20, unit: 'PT' } });
 
   const retPoints = [
     'Conservative Investment Mix',
@@ -538,18 +553,17 @@ export async function createWealthProjectionDoc(
     });
   });
 
-  addText('\n');
-
   // ══════════════════════════════════════════════════════════════════════════
   // ASSUMPTIONS USED
   // ══════════════════════════════════════════════════════════════════════════
 
-  const assHdr = addText('Assumptions Used\n\n');
-  fmt(assHdr.start, assHdr.end - 2, {
+  const assHdr = addText('Assumptions Used\n');
+  fmt(assHdr.start, assHdr.end - 1, {
     bold: true,
     fontSize: { magnitude: 13, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.primary } },
   });
+  para(assHdr.start, assHdr.end, { spaceAbove: { magnitude: 20, unit: 'PT' } });
 
   const assumptions = [
     `${PRE_RETIREMENT_RETURN_RATE}% Annual Return (Pre-Retirement)`,
@@ -571,8 +585,6 @@ export async function createWealthProjectionDoc(
     });
   });
 
-  addText('\n');
-
   // ══════════════════════════════════════════════════════════════════════════
   // CTA BUTTON
   // ══════════════════════════════════════════════════════════════════════════
@@ -587,13 +599,13 @@ export async function createWealthProjectionDoc(
   });
   para(cta.start, cta.end, { alignment: 'CENTER', spaceAbove: { magnitude: 8, unit: 'PT' } });
 
-  const ctaLink = addText(`${SWIPESWIPE_WEBSITE}/chrome\n\n`);
-  fmt(ctaLink.start, ctaLink.end - 2, {
+  const ctaLink = addText(`${SWIPESWIPE_WEBSITE}/chrome\n`);
+  fmt(ctaLink.start, ctaLink.end - 1, {
     fontSize: { magnitude: 10, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
     link: { url: CHROME_EXTENSION_LINK },
   });
-  para(ctaLink.start, ctaLink.end, { alignment: 'CENTER' });
+  para(ctaLink.start, ctaLink.end, { alignment: 'CENTER', spaceBelow: { magnitude: 12, unit: 'PT' } });
 
   // ══════════════════════════════════════════════════════════════════════════
   // DISCLAIMER

@@ -1,8 +1,9 @@
 # How Rich Can You Get - Implementation Game Plan
 
 **Version:** 1.0.0
-**Last Updated:** January 2025
+**Last Updated:** January 2026
 **Status:** Production Ready
+**Branch:** develop
 
 ---
 
@@ -30,14 +31,19 @@
 
 ```
 React 18.2 + TypeScript 5.1
-├── Vite (build tool)
-├── Google Gemini API (@google/generative-ai)
-├── Recharts (stacked area charts)
-├── Framer Motion (animations)
-├── canvas-confetti (celebrations)
-├── Google Docs API (export)
-└── CSS Variables (SwipeSwipe theme)
+├── Vite 4.4 (build tool with code splitting)
+├── Google Gemini API (@google/generative-ai ^0.24.1)
+├── Recharts 3.6 (stacked area charts)
+├── Framer Motion 12.23 (animations)
+├── canvas-confetti 1.9 (celebrations)
+├── Google Docs API via gapi-script (export)
+└── CSS Variables (SwipeSwipe theme + dark mode)
 ```
+
+### Build Optimization
+- **Code Splitting**: Vendor/charts/AI chunks for optimal loading
+- **Source Maps**: Disabled in production
+- **Dev Server**: Port 5173 with auto-open
 
 ### Key Configuration
 
@@ -60,25 +66,33 @@ React 18.2 + TypeScript 5.1
 
 ```
 src/
+├── App.tsx                         # Main app entry (renders WealthChatbot)
+├── main.tsx                        # React DOM entry point
+├── index.ts                        # Library exports (public API)
+├── index.css                       # Global styles
 ├── components/
-│   ├── WealthChatbot.tsx      # Main chatbot with conversation flow
-│   ├── WealthChatbot.css      # SwipeSwipe themed styles + dark mode
-│   ├── HeroWealthDisplay.tsx  # Giant animated wealth number + contribution badge
-│   ├── WealthChart.tsx        # Stacked area chart (Blue + Yellow)
-│   └── AnimatedNumber.tsx     # Number counting animation
+│   ├── WealthChatbot.tsx           # Main chatbot (757 lines) - 6-stage flow
+│   ├── WealthChatbot.css           # SwipeSwipe themed styles + dark mode
+│   ├── HeroWealthDisplay.tsx       # Giant animated wealth number + confetti
+│   ├── WealthChart.tsx             # Stacked area chart (Blue + Yellow)
+│   ├── WealthProjectionChart.tsx   # Alternative SVG chart component
+│   └── AnimatedNumber.tsx          # Reusable number counting animation
 ├── services/
-│   ├── geminiService.ts       # Google Gemini AI integration
-│   └── googleDocsService.ts   # Google Docs export
+│   ├── geminiService.ts            # Google Gemini AI (186 lines)
+│   └── googleDocsService.ts        # Google Docs export (746 lines)
 ├── utils/
-│   ├── calculations.ts        # Two-phase financial calculations
-│   ├── guardrails.ts          # Topic filters + AI safety
-│   ├── inputParser.ts         # Natural language input parsing
-│   ├── animations.ts          # Confetti celebrations
-│   └── swipeswipeCalculator.ts # Income-based savings
+│   ├── calculations.ts             # Two-phase financial calculations (451 lines)
+│   ├── guardrails.ts               # Topic filters + AI safety (506 lines)
+│   ├── inputParser.ts              # Natural language input parsing
+│   ├── animations.ts               # Confetti celebrations + easing functions
+│   └── swipeswipeCalculator.ts     # Income-based savings calculator
 ├── types/
-│   └── index.ts               # TypeScript definitions
-└── constants/
-    └── index.ts               # Prompts, config
+│   └── index.ts                    # TypeScript definitions (230 lines)
+├── constants/
+│   └── index.ts                    # System prompt, config, error messages
+└── __tests__/
+    ├── calculations.test.ts        # Financial calculation tests
+    └── guardrails.test.ts          # Content filtering tests
 ```
 
 ---
@@ -164,18 +178,22 @@ The wealth chart uses a **stacked area design** inspired by SwipeSwipe's existin
 
 ---
 
-## User Flow
+## User Flow (6 Stages)
 
-1. **Greeting** - "How rich can you get powered by SwipeSwipe"
-2. **Age Input** - Collect user's current age
-3. **Income Input** - Auto-calculate SwipeSwipe savings based on income bracket
-4. **Current Savings** - Collect existing savings/investments
-5. **Monthly Investment** - How much they invest monthly
-6. **Projection Display**:
-   - Stacked Area Chart (Deep Blue base + Golden Yellow contribution)
-   - Hero Wealth Display (animated, confetti celebration)
-   - Golden yellow SwipeSwipe contribution badge
-7. **Free Chat** - AI-powered Q&A about their projection
+| Stage | State Name | Action |
+|-------|------------|--------|
+| 1 | `greeting` | "How rich can you get powered by SwipeSwipe" |
+| 2 | `age` | Collect user's current age (18-100) |
+| 3 | `income` | Auto-calculate SwipeSwipe savings based on income bracket |
+| 4 | `currentSavings` | Collect existing savings/investments |
+| 5 | `monthlyInvestment` | How much they invest monthly |
+| 6 | `projection`/`freeChat` | Display results + AI-powered Q&A |
+
+**Projection Display includes:**
+- Stacked Area Chart (Deep Blue base + Golden Yellow contribution)
+- Hero Wealth Display (animated, confetti celebration)
+- Golden yellow SwipeSwipe contribution badge with monthly breakdown
+- Special millionaire celebration for $1M+ projections
 
 ---
 
@@ -232,7 +250,7 @@ VITE_OPENAI_API_KEY=your_openai_key
 
 ## Guardrails & Safety
 
-### Allowed Topics
+### Allowed Topics (11 categories with keyword + regex patterns)
 - Savings & investing
 - Retirement planning
 - Wealth building
@@ -244,7 +262,7 @@ VITE_OPENAI_API_KEY=your_openai_key
 - Financial education
 - Recalculation requests
 
-### Blocked Topics
+### Blocked Topics (40+ off-topic keywords detected)
 - Programming/code
 - Weather
 - Sports
@@ -252,12 +270,21 @@ VITE_OPENAI_API_KEY=your_openai_key
 - Politics
 - Medical/legal advice
 - Specific stock picks
+- Food/cooking
+- Travel
+- Relationships
+- Academics
 
 ### Safety Features
-- Jailbreak detection
-- Off-topic filtering
-- Input validation
-- Professional redirects
+| Feature | Implementation |
+|---------|----------------|
+| **Jailbreak Detection** | 10 regex patterns for prompt injection attempts |
+| **PII Protection** | Detects SSN, bank details, password requests |
+| **Inappropriate Content** | Blocks profanity, violence, illegal activities |
+| **Off-topic Detection** | 40+ keywords with category classification |
+| **Input Validation** | Context-specific validation (age 18-100, income up to $100M) |
+| **API Safety** | 30-second timeout, 3-retry logic, fallback responses |
+| **Gemini Safety Settings** | Blocks harassment, hate speech, explicit, dangerous content |
 
 ---
 
@@ -276,14 +303,24 @@ VITE_OPENAI_API_KEY=your_openai_key
 - [x] Dark mode works correctly
 
 ### Functional Testing
-- [x] 4-step flow works: age → income → savings → investment
+- [x] 6-stage flow works: greeting → age → income → savings → investment → projection/chat
 - [x] SwipeSwipe savings auto-calculated correctly by income bracket
 - [x] Chart starts from current age (year 0) to age 90
-- [x] Gemini AI responds appropriately
+- [x] Gemini AI responds appropriately with safety settings
 - [x] Google Docs export generates correct document with clickable links
 - [x] Two-phase calculation works (11% → 6% at age 70)
 - [x] Life expectancy calculation works (90 - age)
 - [x] Milestone year calculations correct
+- [x] Guardrails filter off-topic questions with category detection
+- [x] Input parser handles natural language ("around 50k", "roughly $75,000")
+
+### Automated Testing
+- **Framework**: Jest with ts-jest preset
+- **Environment**: jsdom (browser simulation)
+- **Coverage Threshold**: 80% (branches, functions, lines, statements)
+- **Test Suites**:
+  - `calculations.test.ts` - Financial calculation tests (5 Whys methodology, BDD format)
+  - `guardrails.test.ts` - Comprehensive content filtering and safety tests
 
 ---
 
@@ -336,16 +373,30 @@ const chartData = years.map(year => ({
 
 The SwipeSwipe Wealth Chatbot delivers an inspiring, visually stunning experience that:
 
-1. **Makes the wealth number unmissable** - Giant, animated, celebratory
+1. **Makes the wealth number unmissable** - Giant, animated, celebratory (with millionaire special effects)
 2. **Tells a story with the chart** - Stacked areas clearly show SwipeSwipe's impact
-3. **Applies SwipeSwipe brand** - Deep blue base + golden yellow contribution
-4. **Delights with animations** - Confetti, counting, glow effects
+3. **Applies SwipeSwipe brand** - Deep blue base + golden yellow contribution throughout
+4. **Delights with animations** - Confetti, counting, glow effects (canvas-confetti + framer-motion)
 5. **Enables beautiful sharing** - Google Docs with full branding and clickable links
-6. **Uses smart AI** - Gemini for intelligent, on-topic responses
-7. **Models realistic scenarios** - Two-phase returns based on age
+6. **Uses smart AI** - Gemini 1.5 Flash for intelligent, cost-efficient, on-topic responses
+7. **Models realistic scenarios** - Two-phase returns (11% → 6%) based on age 70 retirement
+8. **Ensures safety** - Comprehensive guardrails with jailbreak/PII/off-topic detection
+9. **Parses naturally** - Smart input parsing ("around 50k", "roughly $75,000")
 
 **The goal:** When users see their projection, they feel "Wow, I can actually become wealthy. This is simple and achievable."
 
 ---
 
-*Last Updated: January 2025*
+## Recent Changes
+
+| Commit | Description |
+|--------|-------------|
+| cb39c72 | Changes to message display and Google Docs export |
+| 0ba8f5c | Calculation fixes and documentation updates |
+| d50cd80 | UI and production changes |
+| a67c198 | UI changes and documentation updates |
+| 1fca70a | Add Vite env types for TypeScript |
+
+---
+
+*Last Updated: January 2026*

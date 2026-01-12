@@ -5,19 +5,25 @@ A production-ready, AI-powered wealth planning chatbot built with React + TypeSc
 ![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.1-blue.svg)
 ![React](https://img.shields.io/badge/React-18.2-blue.svg)
+![Vite](https://img.shields.io/badge/Vite-4.4-purple.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
+
+**Last Updated:** January 2026
 
 ## Features
 
 - **Hero Wealth Display**: Giant animated number with celebration confetti and golden yellow SwipeSwipe contribution badge
-- **Stacked Area Chart**: Deep Blue base investment + Golden Yellow SwipeSwipe contribution stacked on top
-- **Google Gemini AI**: Powered by Gemini 1.5 Flash for intelligent responses
-- **SwipeSwipe Theme**: Deep Blue (#293A60) + Golden Yellow (#FBC950) branding
-- **Two-Phase Financial Model**: 11% return before 70, 6% after retirement
+- **Stacked Area Chart**: Deep Blue base investment + Golden Yellow SwipeSwipe contribution stacked on top (using Recharts)
+- **Google Gemini AI**: Powered by Gemini 1.5 Flash for intelligent, cost-efficient responses
+- **SwipeSwipe Theme**: Deep Blue (#293A60) + Golden Yellow (#FBC950) consistent branding
+- **Two-Phase Financial Model**: 11% return before age 70, 6% conservative return after retirement
 - **Age 90 Projections**: Chart starts from current age and projects until age 90
-- **Google Docs Export**: Beautiful branded reports with clickable website & extension links
-- **Professional Guardrails**: Keeps conversations on-topic
+- **Google Docs Export**: Beautiful branded reports with clickable website & Chrome extension links
+- **Professional Guardrails**: Jailbreak detection, off-topic filtering (40+ keywords), PII protection
 - **Dark Mode Support**: Automatic dark mode based on system preference
+- **Smart Input Parsing**: Natural language support ("around 50k", "roughly $75,000", "fifty thousand")
+- **Millionaire Celebrations**: Special confetti effects when projections exceed $1M
+- **6-Stage Conversation Flow**: Greeting → Age → Income → Savings → Investment → Projection/Chat
 
 ## Quick Start
 
@@ -106,12 +112,14 @@ function App() {
 
 | Phase | Age Range | Annual Return | Contributions |
 |-------|-----------|---------------|---------------|
-| Pre-Retirement | Until 70 | 11% | Work + SwipeSwipe |
-| Post-Retirement | 70+ | 6% | SwipeSwipe only |
+| Pre-Retirement | Until 70 | 11% (S&P 500 historical avg) | Work savings + SwipeSwipe |
+| Post-Retirement | 70+ | 6% (Conservative allocation) | SwipeSwipe only |
 
-- **Life Expectancy**: 90 years (all projections go to age 90)
-- **Compounding**: Monthly
-- **Milestone Years**: 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70 (starts from current age)
+- **Life Expectancy**: 90 years (all projections extend to age 90)
+- **Compounding**: Monthly (12x per year)
+- **Milestone Years**: 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70 (starts from year 0)
+- **Max Projection**: 70 years (dynamic based on user age to reach 90)
+- **Retirement Age**: 70 (transition point for return rate change)
 
 ## Chart Design
 
@@ -139,39 +147,51 @@ See [THEME.md](./THEME.md) for the complete design system.
 
 ```
 src/
+├── App.tsx                    # Main app entry (renders WealthChatbot)
+├── main.tsx                   # React DOM entry point
+├── index.ts                   # Library exports (public API)
+├── index.css                  # Global styles
 ├── components/
-│   ├── WealthChatbot.tsx      # Main chatbot component
-│   ├── WealthChatbot.css      # SwipeSwipe themed styles
+│   ├── WealthChatbot.tsx      # Main chatbot component (757 lines)
+│   ├── WealthChatbot.css      # SwipeSwipe themed styles + dark mode
 │   ├── HeroWealthDisplay.tsx  # Animated wealth display with confetti
-│   ├── WealthChart.tsx        # Stacked area chart visualization
-│   └── AnimatedNumber.tsx     # Number animation utility
+│   ├── WealthChart.tsx        # Stacked area chart visualization (Recharts)
+│   ├── WealthProjectionChart.tsx # Alternative SVG chart component
+│   └── AnimatedNumber.tsx     # Reusable number animation utility
 ├── services/
-│   ├── geminiService.ts       # Google Gemini AI integration
-│   └── googleDocsService.ts   # Google Docs export
+│   ├── geminiService.ts       # Google Gemini AI integration (1.5 Flash)
+│   └── googleDocsService.ts   # Google Docs export with OAuth 2.0
 ├── utils/
-│   ├── calculations.ts        # Two-phase financial calculations
-│   ├── guardrails.ts          # Topic filters + AI safety
+│   ├── calculations.ts        # Two-phase financial calculations (451 lines)
+│   ├── guardrails.ts          # Topic filters + AI safety (506 lines)
 │   ├── inputParser.ts         # Natural language input parsing
-│   ├── animations.ts          # Confetti celebrations
-│   └── swipeswipeCalculator.ts # Income-based savings
+│   ├── animations.ts          # Confetti celebrations + easing functions
+│   └── swipeswipeCalculator.ts # Income-based savings calculator
 ├── types/
-│   └── index.ts               # TypeScript definitions
-└── constants/
-    └── index.ts               # Prompts, config
+│   └── index.ts               # TypeScript definitions (230 lines)
+├── constants/
+│   └── index.ts               # System prompt, config, error messages
+└── __tests__/
+    ├── calculations.test.ts   # Financial calculation tests
+    └── guardrails.test.ts     # Content filtering tests
 ```
 
-## Conversation Flow
+## Conversation Flow (6 Stages)
 
-1. **Greeting** - "How rich can you get powered by SwipeSwipe"
-2. **Age** - Collect user's current age
-3. **Income** - Auto-calculate SwipeSwipe savings based on income bracket
-4. **Current Savings** - Collect existing savings/investments
-5. **Monthly Investment** - How much they invest monthly
-6. **Projection Display**:
-   - Stacked Area Chart (Deep Blue + Golden Yellow)
-   - Hero Wealth Display (animated, confetti celebration)
-   - SwipeSwipe contribution badge
-7. **Free Chat** - AI-powered Q&A about their projection
+| Stage | Name | Description |
+|-------|------|-------------|
+| 1 | **greeting** | "How rich can you get powered by SwipeSwipe" |
+| 2 | **age** | Collect user's current age (18-100) |
+| 3 | **income** | Auto-calculate SwipeSwipe savings based on income bracket |
+| 4 | **currentSavings** | Collect existing savings/investments |
+| 5 | **monthlyInvestment** | How much they invest monthly |
+| 6 | **projection/freeChat** | Display results + AI-powered Q&A |
+
+**Projection Display includes:**
+- Stacked Area Chart (Deep Blue + Golden Yellow)
+- Hero Wealth Display (animated, confetti celebration)
+- SwipeSwipe contribution badge with monthly breakdown
+- Special millionaire celebration for $1M+ projections
 
 ## Google Docs Export
 
@@ -193,9 +213,20 @@ The export creates a beautiful branded report with:
 ## Testing
 
 ```bash
-npm test
-npm test -- --coverage
+npm test                    # Run Jest tests
+npm test -- --watch        # Watch mode for development
+npm test -- --coverage     # Generate coverage report
 ```
+
+### Test Configuration
+- **Framework**: Jest with ts-jest preset
+- **Environment**: jsdom (browser simulation)
+- **Coverage Threshold**: 80% (branches, functions, lines, statements)
+- **Test Location**: `src/__tests__/`
+
+### Test Suites
+- `calculations.test.ts` - Financial calculation tests (5 Whys methodology, BDD format)
+- `guardrails.test.ts` - Comprehensive content filtering and safety tests
 
 ## Scripts
 
@@ -210,29 +241,58 @@ npm test -- --coverage
 | `npm run type-check` | TypeScript type checking |
 | `npm run format` | Format code with Prettier |
 
-## Security
+## Security & Guardrails
 
-- API keys are never exposed in frontend code
+### Safety Features
+- **Jailbreak Detection**: 10 regex patterns to catch prompt injection attempts
+- **PII Protection**: Detects requests for SSN, bank details, passwords
+- **Inappropriate Content**: Blocks profanity, violence, illegal activities
+- **Off-topic Detection**: 40+ keywords for redirecting non-financial discussions
+
+### Security Measures
+- API keys loaded via environment variables (never exposed in frontend)
 - No PII storage - chatbot doesn't persist sensitive data
-- Jailbreak protection built-in
-- Input validation on all user inputs
-- Comprehensive guardrails for topic filtering
+- Input validation on all user entries with context-specific rules
+- 30-second API timeout with 3-retry logic
+- Safe AI generation config with built-in content filtering
+
+### Allowed Topics
+Savings, investing, retirement, wealth building, budgeting, SwipeSwipe features, projections, debt management, income growth, financial education, recalculation requests
+
+### Blocked Topics
+Programming/code, weather, sports, entertainment, politics, medical/legal advice, specific stock picks
 
 ## Dependencies
 
 ### Production
-- `@google/generative-ai` - Google Gemini AI
-- `canvas-confetti` - Celebration animations
-- `framer-motion` - Motion animations
-- `gapi-script` - Google API loader
-- `recharts` - Interactive charts
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `@google/generative-ai` | ^0.24.1 | Google Gemini AI integration |
+| `canvas-confetti` | ^1.9.4 | Celebration animations |
+| `framer-motion` | ^12.23.26 | Motion animations |
+| `gapi-script` | ^1.2.0 | Google API loader (Docs export) |
+| `recharts` | ^3.6.0 | Interactive stacked area charts |
+| `react` | >=18.0.0 | UI framework |
+| `react-dom` | >=18.0.0 | React DOM rendering |
 
 ### Development
-- TypeScript 5.1
-- Jest + Testing Library
-- ESLint + Prettier
-- Vite (build tool)
-- Husky + lint-staged
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `vite` | ^4.4.0 | Build tool with HMR |
+| `typescript` | ^5.1.0 | Type checking (strict mode) |
+| `@vitejs/plugin-react` | ^4.0.0 | React plugin for Vite |
+| `jest` | ^29.6.0 | Testing framework |
+| `@testing-library/react` | ^14.0.0 | React testing utilities |
+| `eslint` | ^8.45.0 | Code linting |
+| `prettier` | ^3.0.0 | Code formatting |
+| `husky` | ^8.0.0 | Git hooks |
+| `lint-staged` | ^14.0.0 | Staged file linting |
+
+### Build Strategy
+Code splitting configured in Vite for optimal loading:
+- `vendor` chunk: react, react-dom
+- `charts` chunk: recharts
+- `ai` chunk: @google/generative-ai
 
 ## License
 
