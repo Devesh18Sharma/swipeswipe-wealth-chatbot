@@ -3,8 +3,8 @@
  * Interactive wealth projection visualization using Recharts
  *
  * Design: Stacked area chart showing:
- * - Deep Blue (#293A60): Base investment growth (without SwipeSwipe)
- * - Orange (#F5692B): SwipeSwipe contribution stacked on top (the bonus)
+ * - Dark Green (#1B5E20): Base investment growth (without SwipeSwipe)
+ * - Golden Yellow (#FBC950): SwipeSwipe contribution stacked on top (the bonus)
  */
 
 import React from 'react';
@@ -29,9 +29,9 @@ interface WealthChartProps {
 
 // SwipeSwipe Theme Colors
 const colors = {
-  primary: '#293A60',          // Deep Blue - base investment
-  primaryLight: '#DEEFF2',
-  primaryMuted: '#4A5568',     // Muted blue for secondary elements
+  primary: '#1B5E20',          // Dark Green - base investment (changed from gray/blue)
+  primaryLight: '#E8F5E9',     // Light green background
+  primaryMuted: '#2E7D32',     // Muted green for secondary elements
   accent: '#FBC950',           // Golden Yellow - SwipeSwipe contribution (THE HIGHLIGHT)
   accentDark: '#F4B545',
   accentLight: '#FEF3D9',      // Light golden for backgrounds
@@ -39,7 +39,7 @@ const colors = {
   successLight: '#D4FACE',
   successDark: '#0D7A00',      // Dark green for post-retirement badge
   successLightBg: '#E8F5E3',   // Very light green for pre-retirement badge
-  textPrimary: '#293A60',
+  textPrimary: '#293A60',      // Keep text in deep blue for readability
   textSecondary: '#879CA8',
   bgSecondary: '#FAFAFA',
   border: '#F3F6F9',
