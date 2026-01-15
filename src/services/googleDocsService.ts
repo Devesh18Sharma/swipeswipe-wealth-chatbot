@@ -207,33 +207,40 @@ export async function createWealthProjectionDoc(
     foregroundColor: { color: { rgbColor: COLORS.success } },
   });
 
-  // Clickable links row - Website and Extension (14 PT - readable without wrapping)
+  // ═══ LINE 1: Website Link ═══
   const websiteLbl = addText('🌐 Website: ');
   fmt(websiteLbl.start, websiteLbl.end, {
     bold: true,
-    fontSize: { magnitude: 14, unit: 'PT' },
+    fontSize: { magnitude: 25, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.primary } },
   });
 
   const websiteLink = addText(`${SWIPESWIPE_WEBSITE_DISPLAY}`);
   fmt(websiteLink.start, websiteLink.end, {
     bold: true,
-    fontSize: { magnitude: 14, unit: 'PT' },
+    fontSize: { magnitude: 25, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.success } },
     link: { url: SWIPESWIPE_WEBSITE },
   });
 
-  const extLbl = addText('  |  🧩 Chrome Extension: ');
+  const separator = addText('  |\n');
+  fmt(separator.start, separator.end - 1, {
+    fontSize: { magnitude: 25, unit: 'PT' },
+    foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
+  });
+
+  // ═══ LINE 2: Chrome Extension Link ═══
+  const extLbl = addText('🧩 Chrome Extension: ');
   fmt(extLbl.start, extLbl.end, {
     bold: true,
-    fontSize: { magnitude: 14, unit: 'PT' },
+    fontSize: { magnitude: 25, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.primary } },
   });
 
   const extLink = addText('Install Now\n');
   fmt(extLink.start, extLink.end - 1, {
     bold: true,
-    fontSize: { magnitude: 14, unit: 'PT' },
+    fontSize: { magnitude: 25, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.success } },
     link: { url: CHROME_EXTENSION_LINK },
   });
@@ -241,38 +248,26 @@ export async function createWealthProjectionDoc(
   // Tagline
   const tag = addText('A simple, realistic view of what consistency can build.\n');
   fmt(tag.start, tag.end - 1, {
-    fontSize: { magnitude: 11, unit: 'PT' },
+    fontSize: { magnitude: 10, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
     italic: true,
   });
-  para(tag.start, tag.end, { spaceBelow: { magnitude: 12, unit: 'PT' } });
+  para(tag.start, tag.end, { spaceBelow: { magnitude: 16, unit: 'PT' } });
 
   // ══════════════════════════════════════════════════════════════════════════
-  // PERSONALIZED WEALTH PROJECTION CARD
+  // PERSONALIZED WEALTH SIMULATION HEADER
   // ══════════════════════════════════════════════════════════════════════════
 
-  const pwp = addText('Personalized Wealth Simulation\n');
+  const pwp = addText('Personalized Wealth Simulation - Educational Purposes Only\n');
   fmt(pwp.start, pwp.end - 1, {
     bold: true,
-    fontSize: { magnitude: 13, unit: 'PT' },
+    fontSize: { magnitude: 12, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.primary } },
   });
-
-  const gen = addText(`Generated: ${today}\n`);
-  fmt(gen.start, gen.end - 1, {
-    fontSize: { magnitude: 10, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
-  });
-
-  const forYou = addText('For: You\n');
-  fmt(forYou.start, forYou.end - 1, {
-    fontSize: { magnitude: 10, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
-  });
-  para(forYou.start, forYou.end, { spaceBelow: { magnitude: 8, unit: 'PT' } });
+  para(pwp.start, pwp.end, { spaceBelow: { magnitude: 12, unit: 'PT' } });
 
   // ══════════════════════════════════════════════════════════════════════════
-  // HERO SECTION - Green Banner with Net Worth
+  // HERO SECTION - Big Wealth Number
   // ══════════════════════════════════════════════════════════════════════════
 
   // BIG WEALTH NUMBER
@@ -282,76 +277,77 @@ export async function createWealthProjectionDoc(
     fontSize: { magnitude: 48, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.primary } },
   });
-  para(bigNum.start, bigNum.end, { alignment: 'CENTER', spaceAbove: { magnitude: 12, unit: 'PT' } });
+  para(bigNum.start, bigNum.end, { alignment: 'CENTER', spaceAbove: { magnitude: 16, unit: 'PT' } });
 
   // Subtitle
   const heroSub = addText('You are on a path to financial independence.\n');
   fmt(heroSub.start, heroSub.end - 1, {
-    fontSize: { magnitude: 11, unit: 'PT' },
+    fontSize: { magnitude: 12, unit: 'PT' },
     foregroundColor: { color: { rgbColor: { red: 0.18, green: 0.45, blue: 0.22 } } },
     italic: true,
   });
-  para(heroSub.start, heroSub.end, { alignment: 'CENTER', spaceBelow: { magnitude: 12, unit: 'PT' } });
+  para(heroSub.start, heroSub.end, { alignment: 'CENTER', spaceBelow: { magnitude: 20, unit: 'PT' } });
 
   // ══════════════════════════════════════════════════════════════════════════
-  // THE SWIPESWIPE DIFFERENCE
+  // COMPARISON SECTION - Side by Side Layout
   // ══════════════════════════════════════════════════════════════════════════
 
-  const diffHdr = addText(`The ${companyName} Difference\n`);
-  fmt(diffHdr.start, diffHdr.end - 1, {
-    bold: true,
-    fontSize: { magnitude: 13, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.primary } },
-  });
+  // ═══ COMPARISON ROW - Labels on same line ═══
+  const withoutLabel = `Without ${companyName}`;
+  const withLabel = `With ${companyName}`;
+  const labelPadding = '\t\t\t\t\t\t'; // Tab spacing for columns
 
-  // Without SwipeSwipe column
-  const withoutLbl = addText('Without ');
-  fmt(withoutLbl.start, withoutLbl.end, {
-    fontSize: { magnitude: 11, unit: 'PT' },
+  const compLabels = addText(`${withoutLabel}${labelPadding}${withLabel}\n`);
+  // Format "Without" text
+  fmt(compLabels.start, compLabels.start + 8, {
+    fontSize: { magnitude: 12, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
   });
-
-  const withoutBold = addText(`${companyName}`);
-  fmt(withoutBold.start, withoutBold.end, {
+  // Format company name after "Without "
+  fmt(compLabels.start + 8, compLabels.start + withoutLabel.length, {
     bold: true,
-    fontSize: { magnitude: 11, unit: 'PT' },
+    fontSize: { magnitude: 12, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.primary } },
   });
-
-  const spacer1 = addText('\t\t\t\t\t\tWith ');
-  fmt(spacer1.start + 6, spacer1.end, {
-    fontSize: { magnitude: 11, unit: 'PT' },
+  // Format "With" text (after tabs)
+  const withStart = compLabels.start + withoutLabel.length + labelPadding.length;
+  fmt(withStart, withStart + 5, {
+    fontSize: { magnitude: 12, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
   });
-
-  const withBold = addText(`${companyName}\n`);
-  fmt(withBold.start, withBold.end - 1, {
+  // Format company name after "With "
+  fmt(withStart + 5, compLabels.end - 1, {
     bold: true,
-    fontSize: { magnitude: 11, unit: 'PT' },
+    fontSize: { magnitude: 12, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.success } },
   });
+  para(compLabels.start, compLabels.end, { alignment: 'CENTER' });
 
-  // Values
-  const val1 = addText(`${formatCurrency(wealthWithoutSS)}`);
-  fmt(val1.start, val1.end, {
+  // ═══ COMPARISON ROW - Values on same line ═══
+  const val1Str = formatCurrency(wealthWithoutSS);
+  const val2Str = formatCurrency(finalWealth);
+  const valuePadding = '\t\t\t\t\t\t';
+
+  const compValues = addText(`${val1Str}${valuePadding}${val2Str}\n`);
+  // Format first value (blue)
+  fmt(compValues.start, compValues.start + val1Str.length, {
     bold: true,
-    fontSize: { magnitude: 20, unit: 'PT' },
+    fontSize: { magnitude: 22, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.primary } },
   });
-
-  addText('\t\t\t\t\t\t');
-
-  const val2 = addText(`${formatCurrency(finalWealth)}\n`);
-  fmt(val2.start, val2.end - 1, {
+  // Format second value (green)
+  const val2Start = compValues.start + val1Str.length + valuePadding.length;
+  fmt(val2Start, compValues.end - 1, {
     bold: true,
-    fontSize: { magnitude: 20, unit: 'PT' },
+    fontSize: { magnitude: 22, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.success } },
   });
+  para(compValues.start, compValues.end, { alignment: 'CENTER', spaceBelow: { magnitude: 20, unit: 'PT' } });
 
-  // SwipeSwipe Impact centered
+  // ═══ SWIPESWIPE IMPACT - Centered highlight ═══
   const impLbl = addText(`${companyName} Impact\n`);
   fmt(impLbl.start, impLbl.end - 1, {
-    fontSize: { magnitude: 11, unit: 'PT' },
+    fontSize: { magnitude: 12, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
   });
   para(impLbl.start, impLbl.end, { alignment: 'CENTER' });
@@ -359,136 +355,19 @@ export async function createWealthProjectionDoc(
   const impVal = addText(`+${formatCurrency(swipeContribution)}\n`);
   fmt(impVal.start, impVal.end - 1, {
     bold: true,
-    fontSize: { magnitude: 26, unit: 'PT' },
+    fontSize: { magnitude: 32, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.success } },
   });
   para(impVal.start, impVal.end, { alignment: 'CENTER' });
 
   const impNote = addText('The long term value of controlling impulse spending.\n');
   fmt(impNote.start, impNote.end - 1, {
-    fontSize: { magnitude: 10, unit: 'PT' },
+    fontSize: { magnitude: 11, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
     italic: true,
   });
-  para(impNote.start, impNote.end, { alignment: 'CENTER', spaceBelow: { magnitude: 16, unit: 'PT' } });
+  para(impNote.start, impNote.end, { alignment: 'CENTER', spaceBelow: { magnitude: 24, unit: 'PT' } });
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // YOUR STARTING PROFILE
-  // ══════════════════════════════════════════════════════════════════════════
-
-  const profHdr = addText('Your Starting Profile\n');
-  fmt(profHdr.start, profHdr.end - 1, {
-    bold: true,
-    fontSize: { magnitude: 13, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.primary } },
-  });
-
-  // Labels row
-  const profLbls = addText('Current Age\t\t\t\tAnnual Income\t\t\t\tCurrent Savings\n');
-  fmt(profLbls.start, profLbls.end - 1, {
-    fontSize: { magnitude: 10, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
-  });
-  para(profLbls.start, profLbls.end, { alignment: 'CENTER' });
-
-  // Values row
-  const profVals = addText(`${userData.age}\t\t\t\t${formatCurrency(userData.annualIncome)}\t\t\t\t${formatCurrency(userData.currentSavings)}\n`);
-  fmt(profVals.start, profVals.end - 1, {
-    bold: true,
-    fontSize: { magnitude: 16, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.primary } },
-  });
-  para(profVals.start, profVals.end, { alignment: 'CENTER', spaceBelow: { magnitude: 12, unit: 'PT' } });
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // WEALTH GROWTH TABLE (Clean, professional format - fits one page)
-  // ══════════════════════════════════════════════════════════════════════════
-
-  const tblHdr = addText('\nYour Wealth Growth Journey\n\n');
-  fmt(tblHdr.start + 1, tblHdr.end - 2, {
-    bold: true,
-    fontSize: { magnitude: 16, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.primary } },
-  });
-
-  // Subtitle explaining the table
-  const tblSubtitle = addText('See how your wealth grows over time with consistent investing:\n\n');
-  fmt(tblSubtitle.start, tblSubtitle.end - 2, {
-    fontSize: { magnitude: 10, unit: 'PT' },
-    foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
-    italic: true,
-  });
-
-  // Show only KEY milestones to fit on one page (max ~8 rows)
-  const keyMilestones = [5, 10, 20, 30, 40, 50];
-  const finalYear = yearsToAge90;
-
-  // Filter to valid milestones that exist in projection
-  let displayMilestones = keyMilestones.filter(year =>
-    year <= finalYear && projection.withSwipeSwipe[year] !== undefined
-  );
-
-  // Always add the final year if not already included
-  if (finalYear > 0 && !displayMilestones.includes(finalYear) && projection.withSwipeSwipe[finalYear] !== undefined) {
-    displayMilestones.push(finalYear);
-  }
-
-  // Create clean, readable rows - each row is self-contained
-  displayMilestones.forEach((year, index) => {
-    const withoutSS = formatCurrency(projection.withoutSwipeSwipe[year]);
-    const withSS = formatCurrency(projection.withSwipeSwipe[year]);
-    const bonus = formatCurrency(projection.swipeswipeContribution[year]);
-    const age = userData.age + year;
-
-    // Year/Age label
-    const yearLabel = addText(`Year ${year} (Age ${age})\n`);
-    fmt(yearLabel.start, yearLabel.end - 1, {
-      bold: true,
-      fontSize: { magnitude: 11, unit: 'PT' },
-      foregroundColor: { color: { rgbColor: COLORS.primary } },
-    });
-
-    // Without SwipeSwipe line
-    const withoutLine = addText(`Without ${companyName}: `);
-    fmt(withoutLine.start, withoutLine.end, {
-      fontSize: { magnitude: 10, unit: 'PT' },
-      foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
-    });
-    const withoutVal = addText(`${withoutSS}\n`);
-    fmt(withoutVal.start, withoutVal.end - 1, {
-      fontSize: { magnitude: 10, unit: 'PT' },
-      foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
-    });
-
-    // With SwipeSwipe line (highlighted)
-    const withLine = addText(`With ${companyName}: `);
-    fmt(withLine.start, withLine.end, {
-      fontSize: { magnitude: 10, unit: 'PT' },
-      foregroundColor: { color: { rgbColor: COLORS.success } },
-    });
-    const withVal = addText(`${withSS}`);
-    fmt(withVal.start, withVal.end, {
-      bold: true,
-      fontSize: { magnitude: 11, unit: 'PT' },
-      foregroundColor: { color: { rgbColor: COLORS.success } },
-    });
-
-    // Bonus badge
-    const bonusBadge = addText(` (+${bonus})\n`);
-    fmt(bonusBadge.start, bonusBadge.end - 1, {
-      fontSize: { magnitude: 10, unit: 'PT' },
-      foregroundColor: { color: { rgbColor: COLORS.success } },
-      italic: true,
-    });
-
-    // Add spacing between entries (except last)
-    if (index < displayMilestones.length - 1) {
-      addText('\n');
-    }
-  });
-
-  // Add spacing after table
-  addText('\n\n');
 
   // ══════════════════════════════════════════════════════════════════════════
   // WHAT THIS MEANS FOR YOU
@@ -497,10 +376,10 @@ export async function createWealthProjectionDoc(
   const meansHdr = addText('What This Means for You\n');
   fmt(meansHdr.start, meansHdr.end - 1, {
     bold: true,
-    fontSize: { magnitude: 13, unit: 'PT' },
+    fontSize: { magnitude: 14, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.primary } },
   });
-  para(meansHdr.start, meansHdr.end, { spaceAbove: { magnitude: 20, unit: 'PT' } });
+  para(meansHdr.start, meansHdr.end, { spaceAbove: { magnitude: 16, unit: 'PT' } });
 
   const insights = [
     'Small savings can grow into significant wealth',
@@ -560,7 +439,7 @@ export async function createWealthProjectionDoc(
   const assHdr = addText('Assumptions Used\n');
   fmt(assHdr.start, assHdr.end - 1, {
     bold: true,
-    fontSize: { magnitude: 13, unit: 'PT' },
+    fontSize: { magnitude: 14, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.primary } },
   });
   para(assHdr.start, assHdr.end, { spaceAbove: { magnitude: 20, unit: 'PT' } });
@@ -597,7 +476,7 @@ export async function createWealthProjectionDoc(
     backgroundColor: { color: { rgbColor: COLORS.success } },
     link: { url: CHROME_EXTENSION_LINK },
   });
-  para(cta.start, cta.end, { alignment: 'CENTER', spaceAbove: { magnitude: 8, unit: 'PT' } });
+  para(cta.start, cta.end, { alignment: 'CENTER', spaceAbove: { magnitude: 24, unit: 'PT' } });
 
   const ctaLink = addText(`${SWIPESWIPE_WEBSITE}/chrome\n`);
   fmt(ctaLink.start, ctaLink.end - 1, {
@@ -605,7 +484,7 @@ export async function createWealthProjectionDoc(
     foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
     link: { url: CHROME_EXTENSION_LINK },
   });
-  para(ctaLink.start, ctaLink.end, { alignment: 'CENTER', spaceBelow: { magnitude: 12, unit: 'PT' } });
+  para(ctaLink.start, ctaLink.end, { alignment: 'CENTER', spaceBelow: { magnitude: 16, unit: 'PT' } });
 
   // ══════════════════════════════════════════════════════════════════════════
   // DISCLAIMER
@@ -613,11 +492,11 @@ export async function createWealthProjectionDoc(
 
   const disc = addText(`This projection is for educational purposes only. The ${PRE_RETIREMENT_RETURN_RATE}% pre-retirement and ${POST_RETIREMENT_RETURN_RATE}% post-retirement returns are based on historical averages. Past performance does not guarantee future results. Please consult a financial advisor.\n`);
   fmt(disc.start, disc.end - 1, {
-    fontSize: { magnitude: 8, unit: 'PT' },
+    fontSize: { magnitude: 9, unit: 'PT' },
     foregroundColor: { color: { rgbColor: COLORS.textSecondary } },
     italic: true,
   });
-  para(disc.start, disc.end, { alignment: 'CENTER', spaceAbove: { magnitude: 16, unit: 'PT' } });
+  para(disc.start, disc.end, { alignment: 'CENTER', spaceAbove: { magnitude: 20, unit: 'PT' } });
 
   // Execute batch update
   await window.gapi.client.docs.documents.batchUpdate({
